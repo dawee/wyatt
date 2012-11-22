@@ -1931,7 +1931,16 @@ Earp.Generator.prototype = {
     },
 
     proceed: function () {
-        return this.factory(this.getOptions());
+        var uiObject = this.factory(this.getOptions()),
+            index = 0,
+            child = {};
+        for (index = 0; index < this.element.childNodes.length; index += 1) {
+            if (this.element.childNodes[index].hasOwnProperty('tagName')) {
+                child = Earp.getGenerator(this.element.childNodes[index]);
+                uiObject.add(child.proceed());
+            }
+        }
+        return uiObject;
     },
 
 };
