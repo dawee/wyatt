@@ -1909,7 +1909,7 @@ Handlebars.template = Handlebars.VM.template;
 /*global Titanium,Handlebars,Earp*/
 "use strict";
 
-Earp.Generator = function () {}
+Earp.Generator = function () {};
 
 Earp.Generator.prototype = {
 
@@ -1917,7 +1917,7 @@ Earp.Generator.prototype = {
         var index = 0,
             attributes = this.element.attributes;
         this.options = {};
-        for(index = 0; index < attributes.getLength(); index += 1) {
+        for (index = 0; index < attributes.getLength(); index += 1) {
             this.addOption(
                 attributes.item(index).nodeName,
                 attributes.item(index).nodeValue
@@ -1937,36 +1937,44 @@ Earp.Generator.prototype = {
 };
 
 Earp.Generator.extend = function (def) {
-    function generator (element) {
-        this.element = element;
+    var key = null,
+        generator = function (element) {
+            this.element = element;
+        };
+
+    for (key in Earp.Generator.prototype) {
+        if (Earp.Generator.prototype.hasOwnProperty(key)) {
+            generator.prototype[key] = Earp.Generator.prototype[key];
+        }
     }
 
-    for (attribute in Earp.Generator.prototype) {
-        generator.prototype[attribute] = Earp.Generator.prototype[attribute];
-    }
-
-    for (attribute in def) {
-        generator.prototype[attribute] = def[attribute];
+    for (key in def) {
+        if (def.hasOwnProperty(key)) {
+            generator.prototype[key] = def[key];
+        }
     }
 
     return generator;
-}
+};
 
 
-Earp.generators = {}
+Earp.generators = {};
 
 Earp.getGenerator = function (element) {
-    if (hasOwnProperty.call(Earp.generators, element.tagName)) {
-        return new Earp.generators[element.tagName](element);
+    var generator = null;
+    if (Earp.generators.hasOwnProperty(element.tagName)) {
+        generator = new Earp.generators[element.tagName](element);
     } else {
-        throw 'EarpError: "' + element.tagName + '"' + ' is unknown.'
+        throw 'EarpError: "' + element.tagName + '"' + ' is unknown.';
     }
-}/*global Titanium,Handlebars,Earp*/
+    return generator;
+};
+/*global Titanium,Handlebars,Earp*/
 "use strict";
 
 Earp.Builder = function (path, context) {
     this.init(path, context);
-}
+};
 
 Earp.Builder.prototype = {
 
@@ -1993,10 +2001,37 @@ Earp.build = function (path, context) {
 };/*global Titanium,Handlebars,Earp*/
 "use strict";
 
+Earp.generators.view = Earp.Generator.extend({
+
+    factory: function (options) {
+        return Titanium.UI.createView(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.label = Earp.Generator.extend({
+
+    factory: function (options) {
+        return Titanium.UI.createLabel(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
 Earp.generators.window = Earp.Generator.extend({
 
     factory: function (options) {
-        return Titanium.UI.createWindow(options); 
+        return Titanium.UI.createWindow(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.image = Earp.Generator.extend({
+
+    factory: function (options) {
+        return Titanium.UI.createImageView(options);
     }
 
 });
