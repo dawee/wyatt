@@ -25,6 +25,7 @@ Getting started
 ```xml
 <dialog>
     <label top= "50%" left="50%" text="{{text}}" />
+    <button id="foobar" title="click here !">
 </dialog>
 ```
 
@@ -35,6 +36,10 @@ Getting started
 var Earp = require('earp');
 
 var dialog = Earp.build('hello', {text: 'Hello World !'});
+
+dialog.get('foobar').addEventListener('click', function() {
+    alert('Button clicked');     
+});
+
 dialog.open();
 ```
-
