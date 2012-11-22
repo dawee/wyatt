@@ -18,7 +18,7 @@ Earp.Builder.prototype = {
             template = Handlebars.compile(stream),
             exported = template(this.context),
             dom = Titanium.XML.parseString(exported),
-            generator = Earp.getGenerator(dom.documentElement);
+            generator = Earp.getGenerator(dom.documentElement, dom);
         return generator.proceed();
     }
 
