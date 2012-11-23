@@ -9,7 +9,10 @@ Earp.Builder.prototype = {
 
     init: function (path, context) {
         this.context = context || {};
-        this.file = Titanium.Filesystem.getFile(path + '.earp');
+        this.file = Titanium.Filesystem.getFile(
+            Titanium.Filesystem.resourcesDirectory,
+            path + '.earp'
+        );
     },
 
     run: function () {

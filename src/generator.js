@@ -34,8 +34,8 @@ Earp.Generator.prototype = {
             index = 0,
             child = {};
         for (index = 0; index < this.element.childNodes.length; index += 1) {
-            if (this.element.childNodes[index].hasOwnProperty('tagName')) {
-                child = Earp.getGenerator(this.element.childNodes[index], this.dom);
+            if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
+                child = Earp.getGenerator(this.element.childNodes.item(index), this.dom);
                 uiObject.add(child.proceed());
             }
         }

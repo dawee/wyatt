@@ -1942,8 +1942,8 @@ Earp.Generator.prototype = {
             index = 0,
             child = {};
         for (index = 0; index < this.element.childNodes.length; index += 1) {
-            if (this.element.childNodes[index].hasOwnProperty('tagName')) {
-                child = Earp.getGenerator(this.element.childNodes[index], this.dom);
+            if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
+                child = Earp.getGenerator(this.element.childNodes.item(index), this.dom);
                 uiObject.add(child.proceed());
             }
         }
@@ -2012,7 +2012,10 @@ Earp.Builder.prototype = {
 
     init: function (path, context) {
         this.context = context || {};
-        this.file = Titanium.Filesystem.getFile(path + '.earp');
+        this.file = Titanium.Filesystem.getFile(
+            Titanium.Filesystem.resourcesDirectory,
+            path + '.earp'
+        );
     },
 
     run: function () {
@@ -2055,6 +2058,15 @@ Earp.generators.label = Earp.Generator.extend({
 
     factory: function (options) {
         return Titanium.UI.createLabel(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.scroll = Earp.Generator.extend({
+
+    factory: function (options) {
+        return Titanium.UI.createScrollView(options);
     }
 
 });/*global Titanium,Handlebars,Earp*/
