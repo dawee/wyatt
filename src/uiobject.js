@@ -4,10 +4,9 @@
 Earp.feedUIObject = function (uiObject) {
 
     uiObject.get = function (id) {
-        var element = this.dom.getElementById(id),
-            child = null;
-        if (!!element) {
-            child = element.ui;
+        var child = null;
+        if (this.generator.identityMap.hasOwnProperty(id)) {
+            child = this.generator.identityMap[id];
         }
         return child;
     };

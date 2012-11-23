@@ -22,24 +22,25 @@ Earp.Generator.prototype = {
         this.options[name] = value;
     },
 
-    feedUIObject: function (uiObject) {
-        uiObject.element = this.element;
-        uiObject.dom = this.dom;
-        this.element.ui = uiObject;
-        Earp.feedUIObject(uiObject);
-    },
-
     proceed: function () {
         var uiObject = this.factory(this.getOptions()),
             index = 0,
             child = {};
+        uiObject.generator = this;
+        Earp.feedUIObject(uiObject);
+        if (this.element.getAttribute('id').length > 0) {
+            this.identityMap[this.element.getAttribute('id')] = uiObject;
+        }
         for (index = 0; index < this.element.childNodes.length; index += 1) {
             if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
-                child = Earp.getGenerator(this.element.childNodes.item(index), this.dom);
+                child = Earp.getGenerator(
+                    this.element.childNodes.item(index),
+                    this.dom,
+                    this.identityMap
+                );
                 uiObject.add(child.proceed());
             }
         }
-        this.feedUIObject(uiObject);
         return uiObject;
     },
 
@@ -47,9 +48,10 @@ Earp.Generator.prototype = {
 
 Earp.Generator.extend = function (def) {
     var key = null,
-        generator = function (element, dom) {
+        generator = function (element, dom, identityMap) {
             this.element = element;
             this.dom = dom;
+            this.identityMap = identityMap;
         };
 
     for (key in Earp.Generator.prototype) {
@@ -70,10 +72,14 @@ Earp.Generator.extend = function (def) {
 
 Earp.generators = {};
 
-Earp.getGenerator = function (element, dom) {
+Earp.getGenerator = function (element, dom, identityMap) {
     var generator = null;
     if (Earp.generators.hasOwnProperty(element.tagName)) {
-        generator = new Earp.generators[element.tagName](element, dom);
+        generator = new Earp.generators[element.tagName](
+            element,
+            dom,
+            identityMap
+        );
     } else {
         throw 'EarpError: "' + element.tagName + '"' + ' is unknown.';
     }

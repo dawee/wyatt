@@ -13,6 +13,7 @@ Earp.Builder.prototype = {
             Titanium.Filesystem.resourcesDirectory,
             path + '.earp'
         );
+        this.identityMap = {};
     },
 
     run: function () {
@@ -21,7 +22,11 @@ Earp.Builder.prototype = {
             template = Handlebars.compile(stream),
             exported = template(this.context),
             dom = Titanium.XML.parseString(exported),
-            generator = Earp.getGenerator(dom.documentElement, dom);
+            generator = Earp.getGenerator(
+                dom.documentElement,
+                dom,
+                this.identityMap
+            );
         return generator.proceed();
     }
 

@@ -1930,24 +1930,25 @@ Earp.Generator.prototype = {
         this.options[name] = value;
     },
 
-    feedUIObject: function (uiObject) {
-        uiObject.element = this.element;
-        uiObject.dom = this.dom;
-        this.element.ui = uiObject;
-        Earp.feedUIObject(uiObject);
-    },
-
     proceed: function () {
         var uiObject = this.factory(this.getOptions()),
             index = 0,
             child = {};
+        uiObject.generator = this;
+        Earp.feedUIObject(uiObject);
+        if (this.element.getAttribute('id').length > 0) {
+            this.identityMap[this.element.getAttribute('id')] = uiObject;
+        }
         for (index = 0; index < this.element.childNodes.length; index += 1) {
             if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
-                child = Earp.getGenerator(this.element.childNodes.item(index), this.dom);
+                child = Earp.getGenerator(
+                    this.element.childNodes.item(index),
+                    this.dom,
+                    this.identityMap
+                );
                 uiObject.add(child.proceed());
             }
         }
-        this.feedUIObject(uiObject);
         return uiObject;
     },
 
@@ -1955,9 +1956,10 @@ Earp.Generator.prototype = {
 
 Earp.Generator.extend = function (def) {
     var key = null,
-        generator = function (element, dom) {
+        generator = function (element, dom, identityMap) {
             this.element = element;
             this.dom = dom;
+            this.identityMap = identityMap;
         };
 
     for (key in Earp.Generator.prototype) {
@@ -1978,10 +1980,14 @@ Earp.Generator.extend = function (def) {
 
 Earp.generators = {};
 
-Earp.getGenerator = function (element, dom) {
+Earp.getGenerator = function (element, dom, identityMap) {
     var generator = null;
     if (Earp.generators.hasOwnProperty(element.tagName)) {
-        generator = new Earp.generators[element.tagName](element, dom);
+        generator = new Earp.generators[element.tagName](
+            element,
+            dom,
+            identityMap
+        );
     } else {
         throw 'EarpError: "' + element.tagName + '"' + ' is unknown.';
     }
@@ -1993,10 +1999,9 @@ Earp.getGenerator = function (element, dom) {
 Earp.feedUIObject = function (uiObject) {
 
     uiObject.get = function (id) {
-        var element = this.dom.getElementById(id),
-            child = null;
-        if (!!element) {
-            child = element.ui;
+        var child = null;
+        if (this.generator.identityMap.hasOwnProperty(id)) {
+            child = this.generator.identityMap[id];
         }
         return child;
     };
@@ -2016,6 +2021,7 @@ Earp.Builder.prototype = {
             Titanium.Filesystem.resourcesDirectory,
             path + '.earp'
         );
+        this.identityMap = {};
     },
 
     run: function () {
@@ -2024,7 +2030,11 @@ Earp.Builder.prototype = {
             template = Handlebars.compile(stream),
             exported = template(this.context),
             dom = Titanium.XML.parseString(exported),
-            generator = Earp.getGenerator(dom.documentElement, dom);
+            generator = Earp.getGenerator(
+                dom.documentElement,
+                dom,
+                this.identityMap
+            );
         return generator.proceed();
     }
 
@@ -2037,6 +2047,17 @@ Earp.build = function (path, context) {
 "use strict";
 
 Earp.generators.button = Earp.Generator.extend({
+
+    addOption: function (name, value) {
+        if(name === 'fontSize' || name === 'fontFamily') {
+            if (this.options.font !== new Object(this.options.font)) {
+                this.options.font = {};
+            }
+            this.options.font[name] = value;
+        } else {
+            Earp.Generator.prototype.addOption.call(this, name, value);
+        }
+    },
 
     factory: function (options) {
         return Titanium.UI.createButton(options);
@@ -2055,6 +2076,17 @@ Earp.generators.view = Earp.Generator.extend({
 "use strict";
 
 Earp.generators.label = Earp.Generator.extend({
+
+    addOption: function (name, value) {
+        if(name === 'fontSize' || name === 'fontFamily') {
+            if (this.options.font !== new Object(this.options.font)) {
+                this.options.font = {};
+            }
+            this.options.font[name] = value;
+        } else {
+            Earp.Generator.prototype.addOption.call(this, name, value);
+        }
+    },
 
     factory: function (options) {
         return Titanium.UI.createLabel(options);
