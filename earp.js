@@ -1915,8 +1915,14 @@ Earp.Generator.prototype = {
 
     getOptions: function () {
         var index = 0,
-            attributes = this.element.attributes;
+            attributes = this.element.attributes
+            defaults = this.defaults || {};
         this.options = {};
+        for (attribute in defaults) {
+            if (defaults.hasOwnProperty(attribute)) {
+                this.options[attribute] = defaults[attribute];
+            }
+        }
         for (index = 0; index < attributes.getLength(); index += 1) {
             this.addOption(
                 attributes.item(index).nodeName,
@@ -1927,7 +1933,12 @@ Earp.Generator.prototype = {
     },
 
     addOption: function (name, value) {
-        this.options[name] = value;
+        var aliases = this.aliases || {};
+        if (aliases.hasOwnProperty(name)) {
+            this.options[aliases[name]] = value;
+        } else {
+            this.options[name] = value;
+        }
     },
 
     proceed: function () {
@@ -2046,11 +2057,28 @@ Earp.build = function (path, context) {
 };/*global Titanium,Handlebars,Earp*/
 "use strict";
 
+Earp.generators.hspacer = Earp.Generator.extend({
+
+    defaults: {
+        height: '100%',
+    },
+
+    aliases: {
+        size: 'width',
+    },
+
+    factory: function (options) {
+        return Titanium.UI.createView(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
 Earp.generators.button = Earp.Generator.extend({
 
     addOption: function (name, value) {
-        if(name === 'fontSize' || name === 'fontFamily') {
-            if (this.options.font !== new Object(this.options.font)) {
+        if (name === 'fontSize' || name === 'fontFamily') {
+            if (typeof this.options.font !== 'object') {
                 this.options.font = {};
             }
             this.options.font[name] = value;
@@ -2061,6 +2089,43 @@ Earp.generators.button = Earp.Generator.extend({
 
     factory: function (options) {
         return Titanium.UI.createButton(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.line = Earp.Generator.extend({
+
+    defaults: {
+        width: '100%',
+        color: 'black',
+        height: 1
+    },
+
+    aliases: {
+        size: 'height',
+        color: 'backgroundColor'
+    },
+
+    factory: function (options) {
+        return Titanium.UI.createView(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.vspacer = Earp.Generator.extend({
+
+    defaults: {
+        width: '100%',
+    },
+
+    aliases: {
+        size: 'height',
+    },
+
+    factory: function (options) {
+        return Titanium.UI.createView(options);
     }
 
 });/*global Titanium,Handlebars,Earp*/
@@ -2078,8 +2143,8 @@ Earp.generators.view = Earp.Generator.extend({
 Earp.generators.label = Earp.Generator.extend({
 
     addOption: function (name, value) {
-        if(name === 'fontSize' || name === 'fontFamily') {
-            if (this.options.font !== new Object(this.options.font)) {
+        if (name === 'fontSize' || name === 'fontFamily') {
+            if (typeof this.options.font !== 'object') {
                 this.options.font = {};
             }
             this.options.font[name] = value;

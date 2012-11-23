@@ -7,8 +7,15 @@ Earp.Generator.prototype = {
 
     getOptions: function () {
         var index = 0,
-            attributes = this.element.attributes;
+            attributes = this.element.attributes,
+            defaults = this.defaults || {},
+            attribute = null;
         this.options = {};
+        for (attribute in defaults) {
+            if (defaults.hasOwnProperty(attribute)) {
+                this.options[attribute] = defaults[attribute];
+            }
+        }
         for (index = 0; index < attributes.getLength(); index += 1) {
             this.addOption(
                 attributes.item(index).nodeName,
@@ -19,7 +26,12 @@ Earp.Generator.prototype = {
     },
 
     addOption: function (name, value) {
-        this.options[name] = value;
+        var aliases = this.aliases || {};
+        if (aliases.hasOwnProperty(name)) {
+            this.options[aliases[name]] = value;
+        } else {
+            this.options[name] = value;
+        }
     },
 
     proceed: function () {
