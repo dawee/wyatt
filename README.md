@@ -23,10 +23,10 @@ Getting started
 ### 2. Create a __hello.earp__ file in your Resources folder and copy/paste this :
 
 ```xml
-<dialog>
-    <label top= "50%" left="50%" text="{{text}}" />
-    <button id="foobar" title="click here !">
-</dialog>
+<window backgroundColor="white">
+    <label top= "20%" left="50%" text="{{text}}" />
+    <button top= "50%" left="50%" id="foobar" title="click here !" />
+</window>
 ```
 
 

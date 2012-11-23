@@ -1995,7 +1995,7 @@ Earp.feedUIObject = function (uiObject) {
     uiObject.get = function (id) {
         var element = this.dom.getElementById(id),
             child = null;
-        if(!!element) {
+        if (!!element) {
             child = element.ui;
         }
         return child;
@@ -2031,6 +2031,15 @@ Earp.build = function (path, context) {
     var builder = new Earp.Builder(path, context);
     return builder.run();
 };/*global Titanium,Handlebars,Earp*/
+"use strict";
+
+Earp.generators.button = Earp.Generator.extend({
+
+    factory: function (options) {
+        return Titanium.UI.createButton(options);
+    }
+
+});/*global Titanium,Handlebars,Earp*/
 "use strict";
 
 Earp.generators.view = Earp.Generator.extend({
