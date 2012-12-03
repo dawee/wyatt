@@ -36,3 +36,6 @@ Earp.build = function (path, context) {
     var builder = new Earp.Builder(path, context);
     return builder.run();
 };
+
+// Export Handlebars in case of creating helpers is necessaray
+Earp.hbs = Handlebars;

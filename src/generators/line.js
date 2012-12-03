@@ -1,12 +1,13 @@
 /*global Titanium,Handlebars,Earp*/
 "use strict";
 
-Earp.generators.line = Earp.Generator.extend({
+Earp.generators.hline = Earp.Generator.extend({
 
     defaults: {
         width: '100%',
         color: 'black',
-        height: 1
+        height: 1,
+        style: 'solid'
     },
 
     aliases: {
@@ -19,3 +20,6 @@ Earp.generators.line = Earp.Generator.extend({
     }
 
 });
+
+
+Earp.generators.line = Earp.generators.hline;

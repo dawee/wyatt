@@ -28,9 +28,13 @@ Earp.Generator.prototype = {
     addOption: function (name, value) {
         var aliases = this.aliases || {};
         if (aliases.hasOwnProperty(name)) {
-            this.options[aliases[name]] = value;
+            this.addOption(aliases[name], value);
         } else {
-            this.options[name] = value;
+            if (typeof value === 'string' && value.indexOf('{') >= 0) {
+                this.options[name] = JSON.parse(value.replace(/\'/g, '"'));
+            } else {
+                this.options[name] = value;
+            }
         }
     },
 
