@@ -41,11 +41,12 @@ Earp.Generator.prototype = {
     proceed: function () {
         var uiObject = this.factory(this.getOptions()),
             index = 0,
-            child = {};
+            child = {},
+            id = this.element.getAttribute('id');
         uiObject.generator = this;
         Earp.feedUIObject(uiObject);
-        if (this.element.getAttribute('id').length > 0) {
-            this.identityMap[this.element.getAttribute('id')] = uiObject;
+        if (typeof id === 'string' && id.length > 0) {
+            this.identityMap[id] = uiObject;
         }
         for (index = 0; index < this.element.childNodes.length; index += 1) {
             if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
@@ -85,8 +86,11 @@ Earp.Generator.extend = function (def) {
     return generator;
 };
 
-
 Earp.generators = {};
+
+Earp.define = function (name, def) {
+    Earp.generators[name] = Earp.Generator.extend(def);
+};
 
 Earp.getGenerator = function (element, dom, identityMap) {
     var generator = null;

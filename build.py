@@ -6,7 +6,10 @@ FIRST_DATA = """
     Earp lib
     Written by David Corticchiato
 */
-var Earp = {};module.exports = Earp;
+var Earp = function (options) {
+    return Earp.init(options);
+};
+module.exports = Earp;
 """
 
 

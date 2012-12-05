@@ -1,9 +1,9 @@
 /*global Titanium,Handlebars,Earp*/
 "use strict";
 
-Earp.feedUIObject = function (uiObject) {
+Earp.feedUIObject = function (ui) {
 
-    uiObject.get = function (id) {
+    ui.get = function (id) {
         var child = null;
         if (this.generator.identityMap.hasOwnProperty(id)) {
             child = this.generator.identityMap[id];
@@ -11,4 +11,11 @@ Earp.feedUIObject = function (uiObject) {
         return child;
     };
 
+    ui.onclick = function (callback) {
+        ui.addEventListener('click', callback);
+    };
+
+    return ui;
 };
+
+Earp.ui = Earp.feedUIObject;

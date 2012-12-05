@@ -9,11 +9,39 @@ Earp.Builder.prototype = {
 
     init: function (path, context) {
         this.context = context || {};
+        this.context.Ti = {
+            UI: Titanium.UI
+        };
+        this.path = Earp.config.paths.earps
+            + '/'
+            + path.replace(/^\//, '')
+            + Earp.config.extension;
+        this.open();
+        this.identityMap = {};
+    },
+
+    open: function () {
         this.file = Titanium.Filesystem.getFile(
             Titanium.Filesystem.resourcesDirectory,
-            path + '.earp'
+            this.path
         );
-        this.identityMap = {};
+        if (!this.file.exists()) {
+            throw 'EarpError - Failed to parse "'
+                    + this.path
+                    + '" : File does not exist';
+        }
+    },
+
+    parse: function (stream) {
+        var dom = null;
+        try {
+            dom = Titanium.XML.parseString(stream);
+        } catch (e) {
+            throw 'EarpError - Failed to parse "'
+                    + this.path
+                    + '" : Bad XML syntax';
+        }
+        return dom;
     },
 
     run: function () {
@@ -21,7 +49,7 @@ Earp.Builder.prototype = {
             stream = content.toString(),
             template = Handlebars.compile(stream),
             exported = template(this.context),
-            dom = Titanium.XML.parseString(exported),
+            dom = this.parse(exported),
             generator = Earp.getGenerator(
                 dom.documentElement,
                 dom,
