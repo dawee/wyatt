@@ -3,7 +3,7 @@
 
 Earp.feedUIObject = function (ui) {
 
-    ui.get = function (id) {
+    ui.getViewByID = function (id) {
         var child = null;
         if (this.generator.identityMap.hasOwnProperty(id)) {
             child = this.generator.identityMap[id];
