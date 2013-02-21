@@ -42,14 +42,16 @@ Earp.Generator.prototype = {
         var uiObject = this.factory(this.getOptions()),
             index = 0,
             child = {},
-            id = this.element.getAttribute('id');
+            id = this.element.getAttribute('id'),
+            item;
         uiObject.generator = this;
         Earp.feedUIObject(uiObject);
         if (typeof id === 'string' && id.length > 0) {
             this.identityMap[id] = uiObject;
         }
         for (index = 0; index < this.element.childNodes.length; index += 1) {
-            if (this.element.childNodes.item(index).hasOwnProperty('tagName')) {
+            item = this.element.childNodes.item(index);
+            if (item.nodeType === item.ELEMENT_NODE) {
                 child = Earp.getGenerator(
                     this.element.childNodes.item(index),
                     this.dom,

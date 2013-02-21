@@ -12,6 +12,7 @@ Earp.Builder.prototype = {
         this.context.Ti = {
             UI: Titanium.UI
         };
+        this.basePath = path;
         this.path = Earp.config.paths.earps
             + '/'
             + path.replace(/^\//, '')
@@ -45,20 +46,33 @@ Earp.Builder.prototype = {
     },
 
     run: function () {
-        var content = this.file.read(),
-            stream = content.toString(),
-            template = Handlebars.compile(stream),
-            exported = template(this.context),
-            dom = this.parse(exported),
-            generator = Earp.getGenerator(
-                dom.documentElement,
-                dom,
-                this.identityMap
-            );
+        var content,
+            stream,
+            template,
+            exported,
+            dom,
+            generator;
+        if (Earp.pathes.hasOwnProperty(this.basePath)) {
+            template = Earp.pathes[this.basePath];
+        } else {
+            content = this.file.read();
+            stream = content.toString();
+            template = Handlebars.compile(stream);
+            Earp.pathes[this.basePath] = template;
+        }
+        exported = template(this.context);
+        dom = this.parse(exported);
+        generator = Earp.getGenerator(
+            dom.documentElement,
+            dom,
+            this.identityMap
+        );
         return generator.proceed();
     }
 
 };
+
+Earp.pathes = {};
 
 Earp.build = function (path, context) {
     var builder = new Earp.Builder(path, context);
