@@ -44,8 +44,7 @@ Earp.Generator.prototype = {
             child = {},
             id = this.element.getAttribute('id'),
             item;
-        uiObject.generator = this;
-        Earp.feedUIObject(uiObject);
+        Earp.feedUIObject(uiObject, this.identityMap);
         if (typeof id === 'string' && id.length > 0) {
             this.identityMap[id] = uiObject;
         }
