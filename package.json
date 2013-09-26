@@ -1,0 +1,28 @@
+{
+  "name": "earpjs",
+  "version": "0.0.2",
+  "description": "Layout manager for Titanium based on Handlebars",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/IsCoolEntertainment/earpjs.git"
+  },
+  "keywords": [
+    "mustache",
+    "handlebars",
+    "titanium",
+    "earp"
+  ],
+  "author": "David Corticchiato",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/IsCoolEntertainment/earpjs/issues"
+  },
+  "dependencies": {
+    "css": "~1.4.2",
+    "handlebars": "~1.0.12"
+  }
+}
