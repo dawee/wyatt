@@ -1,6 +1,6 @@
 var Handlebars = require('handlebars');
 var settings = require('./lib/settings');
-var Builder = require('./lib/builder');
+var Renderer = require('./lib/renderer');
 var generator = require('./lib/generator');
 
 function Earp(options) {
@@ -13,9 +13,9 @@ function Earp(options) {
     });
 };
 
-Earp.build = function (path, context) {
-    var builder = Builder(path, context);
-    return builder.run();
+Earp.render = function (path, context) {
+    var renderer = new Renderer(path, context);
+    return renderer.run();
 };
 
 Earp.define = function (name, def) {
