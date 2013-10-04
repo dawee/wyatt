@@ -3,7 +3,7 @@ var settings = require('./lib/settings');
 var Renderer = require('./lib/renderer');
 var generator = require('./lib/generator');
 
-function Earp(options, parent) {
+function Earp(options, root) {
     if (typeof parent === 'undefined') {
         settings.extend(options);
 
@@ -13,7 +13,7 @@ function Earp(options, parent) {
             settings.generators.push(widget.register(generator.Generator));
         });
     } else {
-        return parent.select(options);
+        return root.select(options);
     }
 
 };

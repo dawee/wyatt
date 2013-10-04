@@ -29,10 +29,12 @@ Getting started
 ### 1. Create a __hello.rp__ file in your Resources folder and copy/paste this :
 
 ```xml
-<window backgroundColor="white">
-    <label top= "20%" left="50%" text="{{text}}" />
-    <button top= "50%" left="50%" id="foobar" title="click here !" />
-</window>
+<earp>
+    <window id="win" backgroundColor="white">
+        <label top= "20%" left="50%" text="{{text}}" />
+        <button top= "50%" left="50%" id="foobar" title="click here !" />
+    </window>
+</earp>
 ```
 
 
@@ -41,11 +43,11 @@ Getting started
 ```javascript
 var Earp = require('tipis/Earp');
 
-var dialog = Earp.render('hello.rp', {text: 'Hello World !'});
+var hello = Earp.render('app/view/index.rp', {text: 'Hello World !'});
 
-dialog.getViewByID('foobar').addEventListener('click', function() {
+Earp('#foobar', hello).addEventListener('click', function() {
     alert('Button clicked');     
 });
 
-dialog.open();
+Earp('#win', hello).open();
 ```
