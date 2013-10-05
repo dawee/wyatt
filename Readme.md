@@ -1,7 +1,7 @@
 earp.js
 =======
 
-__earp.js__ is view engine for [Titanium](http://www.appcelerator.com/platform/titanium-sdk "Titanium")
+__earp.js__ is a template engine for [Titanium](http://www.appcelerator.com/platform/titanium-sdk "Titanium")
 
 
 Philosophy
