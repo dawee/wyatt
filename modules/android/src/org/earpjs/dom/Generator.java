@@ -28,19 +28,28 @@ public class Generator {
     	this.nodesCount = 0;
     }
 
-    public static Generator createGenerator(String xml, KrollFunction callback) {
+    public static Generator createGenerator() {
     	Generator generator = new Generator(instances.size());
-    	generator.parse(xml, callback);
     	instances.add(generator);
     	return generator;
-    } 
+    }
     
-    private void parse(String earp, KrollFunction callback) {
+    public static Generator getGenerator(int id) {
+    	return instances.get(id);
+    }
+    
+    public void parse(String earp, KrollFunction callback, KrollFunction endCallback) {
     	this.dom = Jsoup.parse(earp);
     	
     	for (Node child : this.dom.getElementsByTag("earp").get(0).childNodes()) {
     		generateRecursive(NO_PARENT, child, callback);
     	}
+    	
+    	endCallback.call((KrollObject) endCallback, new HashMap<String, String>());
+    }
+    
+    public String select(String selector) {
+    	return this.dom.select(selector).get(0).attr("node-id");
     }
     
     private boolean isHTMLSpecifics(Node node) {
@@ -70,6 +79,7 @@ public class Generator {
 
     	if (!isHTMLSpecifics(node)) {
         	nodeId = nodesCount;
+    		node.attr("node-id", String.valueOf(nodeId));
         	callback.call((KrollObject) callback, nodeAsMap(parentId, nodeId, node));
         	nodesCount++;
     	}

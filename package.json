@@ -19,7 +19,7 @@
     "url": "https://github.com/IsCoolEntertainment/earpjs/issues"
   },
   "dependencies": {
-    "css": "~1.4.2",
-    "handlebars": "~1.0.12"
+    "handlebars": "~1.0.12",
+    "extendable": "0.0.6"
   }
 }
