@@ -4,15 +4,14 @@
 #
 version: 0.1
 apiversion: 2
-description: My module
-author: Your Name
-license: Specify your license
-copyright: Copyright (c) 2013 by Your Company
+description: Wyatt brings mustache to your titanium application
+author: David Corticchiato
+license: MIT
 
 
 # these should not be edited
 name: parser
-moduleid: org.earpjs.dom
+moduleid: com.github.dawicorti.wyatt
 guid: df123e16-cca7-4275-b6c6-464efeb3b17b
 platform: android
 minsdk: 3.1.2.GA

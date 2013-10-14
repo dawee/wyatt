@@ -1,4 +1,4 @@
-package org.earpjs.dom;
+package com.github.dawicorti.wyatt;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -48,7 +48,7 @@ public class Generator {
     public void parse(String path, KrollFunction callback, KrollFunction endCallback) {
     	this.dom = Jsoup.parse(readFile(path));
     	
-    	for (Node child : this.dom.getElementsByTag("earp").get(0).childNodes()) {
+    	for (Node child : this.dom.getElementsByTag("wyatt").get(0).childNodes()) {
     		generateRecursive(NO_PARENT, child, callback);
     	}
     	

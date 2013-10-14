@@ -1,4 +1,4 @@
-package org.earpjs.dom;
+package com.github.dawicorti.wyatt;
 
 import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollModule;
@@ -6,7 +6,7 @@ import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
 
-@Kroll.module(name="Parser", id="org.earpjs.dom")
+@Kroll.module(name="Parser", id="com.github.dawicorti.wyatt")
 public class ParserModule extends KrollModule
 {
 

@@ -1,25 +1,22 @@
 {
-  "name": "earp",
-  "version": "0.0.4",
-  "description": "Layout manager for Titanium based on Handlebars",
+  "name": "wyatt",
+  "version": "0.0.1",
+  "description": "Wyatt brings mustache to your titanium application",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/IsCoolEntertainment/earpjs.git"
+    "url": "git://github.com/dawicorti/wyatt.git"
   },
   "keywords": [
     "mustache",
-    "handlebars",
-    "titanium",
-    "earp"
+    "titanium"
   ],
   "author": "David Corticchiato",
-  "license": "BSD-2-Clause",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/IsCoolEntertainment/earpjs/issues"
+    "url": "https://github.com/dawicorti/wyatt/issues"
   },
   "dependencies": {
-    "handlebars": "~1.0.12",
     "extendable": "0.0.6"
   }
 }
