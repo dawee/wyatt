@@ -1,17 +1,22 @@
 package org.earpjs.dom;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollObject;
+import org.appcelerator.titanium.util.TiFileHelper;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
+import org.apache.commons.io.IOUtils;
 
 public class Generator {
 
@@ -38,8 +43,10 @@ public class Generator {
     	return instances.get(id);
     }
     
-    public void parse(String earp, KrollFunction callback, KrollFunction endCallback) {
-    	this.dom = Jsoup.parse(earp);
+    
+    
+    public void parse(String path, KrollFunction callback, KrollFunction endCallback) {
+    	this.dom = Jsoup.parse(readFile(path));
     	
     	for (Node child : this.dom.getElementsByTag("earp").get(0).childNodes()) {
     		generateRecursive(NO_PARENT, child, callback);
@@ -50,6 +57,28 @@ public class Generator {
     
     public String select(String selector) {
     	return this.dom.select(selector).get(0).attr("node-id");
+    }
+    
+    private String readFile(String path) {
+    	String data = "";
+    	InputStream inputStream = null;
+    	
+    	try {
+            inputStream = TiFileHelper.getInstance().openInputStream(path, true);
+            data = IOUtils.toString(inputStream);
+        } catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+        	try {
+				inputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        }
+    	
+    	return data;
     }
     
     private boolean isHTMLSpecifics(Node node) {

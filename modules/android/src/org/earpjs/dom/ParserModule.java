@@ -5,7 +5,6 @@ import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
-import org.appcelerator.kroll.common.Log;
 
 @Kroll.module(name="Parser", id="org.earpjs.dom")
 public class ParserModule extends KrollModule
@@ -25,11 +24,11 @@ public class ParserModule extends KrollModule
 	}
 
 	@Kroll.method
-	public void parse(int genId, String earp, KrollFunction callback, KrollFunction endCallback) {
+	public void parse(int genId, String path, KrollFunction callback, KrollFunction endCallback) {
 		Generator generator = Generator.getGenerator(genId);
 		
 		if (generator != null) {
-			generator.parse(earp, callback, endCallback);
+			generator.parse(path, callback, endCallback);
 		}
 	}
 

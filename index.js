@@ -1,9 +1,9 @@
 
-var Generator = require('./lib/generator');
+var Generator = require('./lib/Generator');
 
 module.exports = {
-    render: function (earpStr, cb) {
+    render: function (path, cb) {
         var generator = new Generator();
-        generator.parse(earpStr, cb);
+        generator.parse(path, cb);
     }
 };

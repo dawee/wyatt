@@ -1,5 +1,14 @@
+platform=$(uname)
+
+ifeq (platform, "Darwin")
+  titanium_path=~/Library/Application\ Support/Titanium
+else
+  titanium_path=~/.titanium
+endif
+
+
 clean:
-	rm -rf /Users/dawi/Library/Application\ Support/Titanium/modules/android/org.earpjs.dom
+	rm -rf ${titanium_path}/modules/android/org.earpjs.dom
 	rm -rf modules/android/build
 
 build:
@@ -7,7 +16,7 @@ build:
 
 install:
 	unzip -o modules/android/dist/org.earpjs.dom-android-0.1.zip -d modules/android/dist
-	rsync -ru modules/android/dist/modules /Users/dawi/Library/Application\ Support/Titanium
+	rsync -ru modules/android/dist/modules ${titanium_path}
 	../tetanize/bin/tetanize --out ../earp-sample/tipis/earp.js
 
 all: build
