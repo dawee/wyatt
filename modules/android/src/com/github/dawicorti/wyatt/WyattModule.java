@@ -6,11 +6,11 @@ import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
 
-@Kroll.module(name="Parser", id="com.github.dawicorti.wyatt")
-public class ParserModule extends KrollModule
+@Kroll.module(name="Wyatt", id="com.github.dawicorti.wyatt")
+public class WyattModule extends KrollModule
 {
 
-	public ParserModule() {
+	public WyattModule() {
 		super();
 	}
 
