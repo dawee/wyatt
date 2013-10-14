@@ -1,0 +1,5 @@
+<wyatt>
+    <style src="app/style/style.yss" />
+
+    <window fullscreen="true"></window>
+</wyatt>

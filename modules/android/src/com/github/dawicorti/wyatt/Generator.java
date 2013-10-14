@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,7 +17,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
+import org.jsoup.parser.Parser;
 import org.apache.commons.io.IOUtils;
+
+import android.util.Log;
 
 public class Generator {
 
@@ -46,7 +50,13 @@ public class Generator {
     
     
     public void parse(String path, KrollFunction callback, KrollFunction endCallback) {
-    	this.dom = Jsoup.parse(readFile(path));
+    	Date t0 = new Date();
+    	this.dom = Jsoup.parse(readFile(path), "", Parser.xmlParser());
+    	Date t1 = new Date();
+    	Log.d("Parser", "************** Parsing time : " + String.valueOf(t1.getTime() - t0.getTime()));
+    	
+    	
+    	YSSParser.applyDOMStyles(this.dom);
     	
     	for (Node child : this.dom.getElementsByTag("wyatt").get(0).childNodes()) {
     		generateRecursive(NO_PARENT, child, callback);
@@ -80,13 +90,7 @@ public class Generator {
     	
     	return data;
     }
-    
-    private boolean isHTMLSpecifics(Node node) {
-    	return node.nodeName().equals("html")
-    			|| node.nodeName().equals("head")
-    			|| node.nodeName().equals("body");
-    }
-    
+
     private HashMap<String, String> nodeAsMap(int parentId, int nodeId, Node node) {
     	HashMap<String, String> opt = new HashMap<String, String>();
 
@@ -104,15 +108,11 @@ public class Generator {
     }
     
     private void generateRecursive(int parentId, Node node, KrollFunction callback) {
-    	int nodeId = NO_PARENT;
+    	int nodeId = nodesCount;
 
-    	if (!isHTMLSpecifics(node)) {
-        	nodeId = nodesCount;
-    		node.attr("node-id", String.valueOf(nodeId));
-        	callback.call((KrollObject) callback, nodeAsMap(parentId, nodeId, node));
-        	nodesCount++;
-    	}
-
+    	node.attr("node-id", String.valueOf(nodeId));
+    	callback.call((KrollObject) callback, nodeAsMap(parentId, nodeId, node));
+    	nodesCount++;
     	for (Node child : node.childNodes()) {
     		generateRecursive(nodeId, child, callback);
     	}

@@ -17,6 +17,8 @@
     "url": "https://github.com/dawicorti/wyatt/issues"
   },
   "dependencies": {
-    "extendable": "0.0.6"
+    "extendable": "0.0.6",
+    "tetanize": "0.0.5",
+    "string": "~1.6.0"
   }
 }
