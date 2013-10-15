@@ -1,6 +1,4 @@
 node_modules
 build
 dist
-build.properties
-libs
-
+npm-debug.log

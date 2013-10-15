@@ -1,6 +1,6 @@
 {
   "name": "wyatt",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Wyatt brings mustache to your titanium application",
   "main": "index.js",
   "repository": {
@@ -9,6 +9,7 @@
   },
   "keywords": [
     "mustache",
+    "handlebars",
     "titanium"
   ],
   "author": "David Corticchiato",
@@ -18,12 +19,7 @@
   },
   "dependencies": {
     "extendable": "0.0.6",
-    "tetanize": "0.0.5",
-    "string": "~1.6.0",
     "json3": "~3.2.5",
     "handlebars": "~1.0.12"
-  },
-  "devDependencies": {
-    "statik": "~1.4.3"
   }
 }
