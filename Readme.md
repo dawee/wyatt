@@ -1,7 +1,6 @@
 # Wyatt
 
-  __Wyatt__ is a template engine for Titanium.
-  It's based on __{JSON}__ and __{{mustache}}__ (Handlebars.js). 
+__Wyatt__ is a template engine for Titanium. It's based on __{JSON}__ and __{{mustache}}__ (Handlebars.js). 
 
 ## Installation
 
@@ -42,8 +41,7 @@ yat.first({type: "Window"}).open();
 
 ## YAT File Format
 
-Special attributes are prefixed with __@__.
-These special attributes are not passed to the UI constructors.
+Special keys are prefixed with __@__. Special keys are not passed to the UI constructors.
 
 __@type__ : The type name of the UI :
 
@@ -53,6 +51,22 @@ __@type__ : The type name of the UI :
 *   __Label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
 
 __@children__ : The list of UIs to add into the current UI
+
+## YAT Queries
+
+Queries are used to retrieve __YAT elements__.
+
+### __yat.all__(query)
+
+Retreive a list of all the elements that matched the query.
+
+A query is a JSON object. It's used to filter the elements who match every __name/value__ pair. 
+
+Only special keys can be used for the query. Users can add any custom special key such as __@id__ or __@class__.
+
+### __yat.first__(query)
+
+Same as __yat.all__ but returns only the first matched element.
 
 ## License 
 
