@@ -99,7 +99,9 @@ var yat = wyatt.render('query-example.yat', {
 });
 
 // Finds all the developers and change their color
-yat.all({type: "Label", job: "developer"}).set({color: 'red'});
+yat.all({type: "Label", job: "developer"}).forEach(function (el) {
+  el.set({color: 'red'});
+});
 ```
 
 
