@@ -1,6 +1,5 @@
 {
     "Window": {
-        "_id": "container",
         "backgroundColor": "white",
         "fullscreen": true,
 

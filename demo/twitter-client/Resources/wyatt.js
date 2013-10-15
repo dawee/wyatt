@@ -32,15 +32,13 @@ __tetanize_define('lib/YatDocument.js', function (require, exports, module) {
       var elements = [];
   
       this.stack.forEach(function (element) {
-          console.log(element);
           var matched = rules.every(function (rule) {
-              console.log('_' + rule.name, element['_' + rule.name])
               return element['_' + rule.name] === rule.value;
           });
   
           if (matched) elements.push(element);
       });
-      console.log(elements);
+  
       return elements;
   };
   
@@ -60,6 +58,7 @@ __tetanize_define('lib/YatDocument.js', function (require, exports, module) {
       
       // Create element following the given types relation
       element = new ElementType();
+      element.patch({_type: type});
       element.patch(template);
       element.create(template);
       
