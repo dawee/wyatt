@@ -33,7 +33,7 @@ __tetanize_define('lib/YatDocument.js', function (require, exports, module) {
   
       this.stack.forEach(function (element) {
           var matched = rules.every(function (rule) {
-              return element['_' + rule.name] === rule.value;
+              return element[rule.name] === rule.value;
           });
   
           if (matched) elements.push(element);
@@ -52,40 +52,44 @@ __tetanize_define('lib/YatDocument.js', function (require, exports, module) {
       return this.query(query)[0];
   };
   
-  YatDocument.prototype.element = function (type, template) {
+  YatDocument.prototype.splinto = function (template) {
+      var splitted = {specials: {}, properties: {}};
+  
+      Object.keys(template).forEach(function (key) {
+          if (key.match(/^@/)) {
+              splitted.specials[key.replace(/^@/, '')] = template[key];
+          } else {
+              splitted.properties[key] = template[key];
+          }
+      });
+  
+      return splitted;
+  };
+  
+  YatDocument.prototype.element = function (template) {
+      var type = template['@type'];
+  
       if (!this.types.hasOwnProperty(type)) throw 'Unknown UI type : "' + type + '"';
+  
       var ElementType = this.types[type],
-      
-      // Create element following the given types relation
-      element = new ElementType();
-      element.patch({_type: type});
-      element.patch(template);
-      element.create(template);
-      
+          element = new ElementType(),
+          splitted = this.splinto(template);
+  
+      element.patch(splitted.specials);
+      element.create(splitted.properties);
       // Register for future queries
       this.stack.push(element);
       return element;
   };
   
-  YatDocument.prototype.each = function (template, cb) {
-      Object.keys(template).forEach(function (key) {
-          if (key.match(/^[A-Z]\w+$/)) {
-              cb(key, template[key]);
-          }
-      });
-  };
-  
-  YatDocument.prototype.scan = function (parent, template) {
+  YatDocument.prototype.scan = function (parent, tree) {
       var yat = this;
   
-      yat.each(template, function (type, subtemplate) {
-          var element = yat.element(type, subtemplate);
-  
+      tree.forEach(function (template) {
+          var element = yat.element(template);
           // Append the element to the given parent
           if (parent !== null) parent.ui.add(element.ui);
-  
-          // Scan element to find children
-          yat.scan(element, subtemplate);
+          if (typeof template['@children'] !== 'undefined') yat.scan(element, template['@children']);
       });
   };
   
@@ -1066,6 +1070,93 @@ __tetanize_define('node_modules/handlebars/lib/handlebars.js', function (require
   
 
 });
+__tetanize_define('node_modules/handlebars/lib/handlebars/utils.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
+  
+  var toString = Object.prototype.toString;
+  
+  // BEGIN(BROWSER)
+  
+  var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
+  
+  Handlebars.Exception = function(message) {
+    var tmp = Error.prototype.constructor.apply(this, arguments);
+  
+    // Unfortunately errors are not enumerable in Chrome (at least), so `for prop in tmp` doesn't work.
+    for (var idx = 0; idx < errorProps.length; idx++) {
+      this[errorProps[idx]] = tmp[errorProps[idx]];
+    }
+  };
+  Handlebars.Exception.prototype = new Error();
+  
+  // Build out our basic SafeString type
+  Handlebars.SafeString = function(string) {
+    this.string = string;
+  };
+  Handlebars.SafeString.prototype.toString = function() {
+    return this.string.toString();
+  };
+  
+  var escape = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "`": "&#x60;"
+  };
+  
+  var badChars = /[&<>"'`]/g;
+  var possible = /[&<>"'`]/;
+  
+  var escapeChar = function(chr) {
+    return escape[chr] || "&amp;";
+  };
+  
+  Handlebars.Utils = {
+    extend: function(obj, value) {
+      for(var key in value) {
+        if(value.hasOwnProperty(key)) {
+          obj[key] = value[key];
+        }
+      }
+    },
+  
+    escapeExpression: function(string) {
+      // don't escape SafeStrings, since they're already safe
+      if (string instanceof Handlebars.SafeString) {
+        return string.toString();
+      } else if (string == null || string === false) {
+        return "";
+      }
+  
+      // Force a string conversion as this will be done by the append regardless and
+      // the regex test will do this transparently behind the scenes, causing issues if
+      // an object's to string has escaped characters in it.
+      string = string.toString();
+  
+      if(!possible.test(string)) { return string; }
+      return string.replace(badChars, escapeChar);
+    },
+  
+    isEmpty: function(value) {
+      if (!value && value !== 0) {
+        return true;
+      } else if(toString.call(value) === "[object Array]" && value.length === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+
+});
 __tetanize_define('node_modules/handlebars/lib/handlebars/base.js', function (require, exports, module) { 
   /*jshint eqnull: true */
   
@@ -1236,93 +1327,6 @@ __tetanize_define('node_modules/handlebars/lib/handlebars/base.js', function (re
   
 
 });
-__tetanize_define('node_modules/handlebars/lib/handlebars/utils.js', function (require, exports, module) { 
-  exports.attach = function(Handlebars) {
-  
-  var toString = Object.prototype.toString;
-  
-  // BEGIN(BROWSER)
-  
-  var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
-  
-  Handlebars.Exception = function(message) {
-    var tmp = Error.prototype.constructor.apply(this, arguments);
-  
-    // Unfortunately errors are not enumerable in Chrome (at least), so `for prop in tmp` doesn't work.
-    for (var idx = 0; idx < errorProps.length; idx++) {
-      this[errorProps[idx]] = tmp[errorProps[idx]];
-    }
-  };
-  Handlebars.Exception.prototype = new Error();
-  
-  // Build out our basic SafeString type
-  Handlebars.SafeString = function(string) {
-    this.string = string;
-  };
-  Handlebars.SafeString.prototype.toString = function() {
-    return this.string.toString();
-  };
-  
-  var escape = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#x27;",
-    "`": "&#x60;"
-  };
-  
-  var badChars = /[&<>"'`]/g;
-  var possible = /[&<>"'`]/;
-  
-  var escapeChar = function(chr) {
-    return escape[chr] || "&amp;";
-  };
-  
-  Handlebars.Utils = {
-    extend: function(obj, value) {
-      for(var key in value) {
-        if(value.hasOwnProperty(key)) {
-          obj[key] = value[key];
-        }
-      }
-    },
-  
-    escapeExpression: function(string) {
-      // don't escape SafeStrings, since they're already safe
-      if (string instanceof Handlebars.SafeString) {
-        return string.toString();
-      } else if (string == null || string === false) {
-        return "";
-      }
-  
-      // Force a string conversion as this will be done by the append regardless and
-      // the regex test will do this transparently behind the scenes, causing issues if
-      // an object's to string has escaped characters in it.
-      string = string.toString();
-  
-      if(!possible.test(string)) { return string; }
-      return string.replace(badChars, escapeChar);
-    },
-  
-    isEmpty: function(value) {
-      if (!value && value !== 0) {
-        return true;
-      } else if(toString.call(value) === "[object Array]" && value.length === 0) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  };
-  
-  // END(BROWSER)
-  
-  return Handlebars;
-  };
-  
-
-});
 __tetanize_define('node_modules/handlebars/lib/handlebars/runtime.js', function (require, exports, module) { 
   exports.attach = function(Handlebars) {
   
@@ -1436,12 +1440,12 @@ __tetanize_define('node_modules/handlebars/lib/handlebars/runtime.js', function 
 __tetanize_define('lib/ViewElement.js', function (require, exports, module) { 
   var extend = require('node_modules/extendable/index.js');
   
-  function ViewElement(template) {}
+  function ViewElement() {}
   
   ViewElement.prototype.patch = function (keys) {
       var element = this;
   
-      Object.keys(keys).filter(function (k) {return k[0] === '_'}).forEach(function(key) {
+      Object.keys(keys).forEach(function(key) {
           element[key] = keys[key];
       });
   };

@@ -1,11 +1,17 @@
-{
-    "Window": {
+[
+    {
+        "@type": "Window",
+
         "backgroundColor": "white",
         "fullscreen": true,
 
-        "Label": {
-            "text": "{{message}}",
-            "color": "#333333"
-        }
+        "@children": [
+            {
+                "@type": "Label",
+
+                "text": "{{message}}",
+                "color": "#333333"
+            }
+        ]
     }
-}
+]
