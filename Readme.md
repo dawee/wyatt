@@ -56,7 +56,7 @@ __@children__ : The list of UIs to add into the current UI
 
 Queries are used to retrieve __YAT elements__.
 
-### __yat.all__(query)
+### yat.all(query)
 
 Retreive a list of all the elements that matched the query.
 
@@ -64,7 +64,47 @@ A query is a JSON object. It's used to filter the elements who match every __nam
 
 Only special keys can be used for the query. Users can add any custom special key such as __@id__ or __@class__.
 
-### __yat.first__(query)
+__query-example.yat__ :
+
+```javascript
+{
+  "@type": "View",
+
+  "@children": [
+    {
+      {{#persons}}
+      {
+        "@type": "Label",
+        "@job": "{{job}}",
+        "text": "{{name}}"
+      }
+      {{/persons}} 
+    }
+  ]
+}
+```
+
+__app.js__ :
+
+```javascript
+var wyatt = require('tipis/wyatt');
+
+// Generates the UI
+var yat = wyatt.render('query-example.yat', {
+  persons: [
+    {name: "John Smith", job: "developer"},
+    {name: "Stewart McKay", job: "developer"},
+    {name: "Bob White", job: "manager"},
+  ]
+});
+
+// Finds all the developers and change their color
+yat.all({type: "Label", job: "developer"}).set({color: 'red'});
+```
+
+
+
+### yat.first(query)
 
 Same as __yat.all__ but returns only the first matched element.
 
