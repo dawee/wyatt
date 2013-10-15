@@ -1,5 +1,12 @@
-<wyatt>
-    <style src="app/style/style.yss" />
+{
+    "Window": {
+        "_id": "container",
+        "backgroundColor": "white",
+        "fullscreen": true,
 
-    <window fullscreen="true"></window>
-</wyatt>
+        "Label": {
+            "text": "{{message}}",
+            "color": "#333333"
+        }
+    }
+}

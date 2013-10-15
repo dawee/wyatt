@@ -1,9 +1,5 @@
 var wyatt = require('wyatt');
 
+var yat = wyatt.render('app/template/home.yat', {message: "Hello World !"});
 
-var t0 = Date.now();
-wyatt.render('app/template/home.yat', function (yat) {
-    var delay = Date.now() - t0;
-    alert(delay);
-    yat('window').open();
-});
+yat.first({id: 'container'}).open();

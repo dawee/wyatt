@@ -39,7 +39,6 @@
 		<theme>default</theme>
 	</mobileweb>
 	<modules>
-		<module>com.github.dawicorti.wyatt</module>
 	</modules>
 	<deployment-targets>
 		<target device="android">true</target>

@@ -19,6 +19,11 @@
   "dependencies": {
     "extendable": "0.0.6",
     "tetanize": "0.0.5",
-    "string": "~1.6.0"
+    "string": "~1.6.0",
+    "json3": "~3.2.5",
+    "handlebars": "~1.0.12"
+  },
+  "devDependencies": {
+    "statik": "~1.4.3"
   }
 }

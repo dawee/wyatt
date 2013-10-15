@@ -22,123 +22,970 @@ var __tetanize_define = function (id, constructor) {
     __tetanize_constructors[id] = constructor;
 };
 
-__tetanize_define('index.js', function (require, exports, module) { 
-  
-  var Generator = require('lib/Generator.js');
-  
-  module.exports = {
-      render: function (path, cb) {
-          var generator = new Generator();
-          generator.parse(path, cb);
-      }
-  };
-
-});
-__tetanize_define('lib/LabelElement.js', function (require, exports, module) { 
-  var ViewElement = require('lib/ViewElement.js');
-  
-  var LabelElement = ViewElement.extend({
-  
-      create: function (options) {
-          this.ui = Titanium.UI.createLabel(options);
-      }
-  
-  });
-  
-  module.exports = LabelElement;
-
-});
-__tetanize_define('lib/Generator.js', function (require, exports, module) { 
-  var dom = require('com.github.dawicorti.wyatt');
-  var elementTypes = {};
-  
-  require('node_modules/string/lib/string.js').extendPrototype();
-  
-  elementTypes.view = require('lib/ViewElement.js');
-  elementTypes.window = require('lib/WindowElement.js');
-  elementTypes.label = require('lib/LabelElement.js');
-  elementTypes.button = require('lib/ButtonElement.js');
-  
-  function Generator() {
-      this.nodeIds = {};
+__tetanize_define('lib/YatDocument.js', function (require, exports, module) { 
+  function YatDocument(types) {
+      this.types = types;
+      this.stack = [];
   }
   
-  Generator.prototype.parse = function (path, cb) {
-      var that = this;
+  YatDocument.prototype.filter = function (rules) {
+      var elements = [];
   
-      this.genId = dom.createGenerator();
-      dom.parse(
-          this.genId,
-          path,
-          function (options) {
-              that.factory(options);
-          },
-          function () {
-              cb(function (selector) {
-                  return that.select(selector);
-              });
-          }
-      );
+      this.stack.forEach(function (element) {
+          console.log(element);
+          var matched = rules.every(function (rule) {
+              console.log('_' + rule.name, element['_' + rule.name])
+              return element['_' + rule.name] === rule.value;
+          });
+  
+          if (matched) elements.push(element);
+      });
+      console.log(elements);
+      return elements;
   };
   
-  Generator.prototype.select = function (selector) {
-      var nodeId = dom.select(this.genId, selector);
-  
-      if (this.nodeIds.hasOwnProperty(nodeId)) {
-          return this.nodeIds[nodeId];
-      }
+  YatDocument.prototype.query = function (query) {
+      return this.filter(Object.keys(query || {}).map(function (k) { 
+          return {name: k, value: query[k]};
+      }));
   };
   
-  Generator.prototype.sanitize = function (options) {
-      var sanitized = {};
+  YatDocument.prototype.first = function (query) {
+      return this.query(query)[0];
+  };
   
-      Object.keys(options).forEach(function (key) {
-          if (['nodeId', 'parendId', 'nodeName'].indexOf(key) === -1) {
-              var value = options[key];
+  YatDocument.prototype.element = function (type, template) {
+      if (!this.types.hasOwnProperty(type)) throw 'Unknown UI type : "' + type + '"';
+      var ElementType = this.types[type],
+      
+      // Create element following the given types relation
+      element = new ElementType();
+      element.patch(template);
+      element.create(template);
+      
+      // Register for future queries
+      this.stack.push(element);
+      return element;
+  };
   
-              if (key.match(/^\w+\-\w+$/)) {
-                  key = key.split('-')[0] + key.split('-')[1].capitalize();
-              }
-  
-              sanitized[key] = value;
+  YatDocument.prototype.each = function (template, cb) {
+      Object.keys(template).forEach(function (key) {
+          if (key.match(/^[A-Z]\w+$/)) {
+              cb(key, template[key]);
           }
       });
-  
-      return sanitized;
   };
   
-  Generator.prototype.factory = function (options) {
-      if (elementTypes.hasOwnProperty(options.nodeName)) {
-          var ElementType = elementTypes[options.nodeName], 
-              element = new ElementType();
+  YatDocument.prototype.scan = function (parent, template) {
+      var yat = this;
   
-          element.create(this.sanitize(options));
+      yat.each(template, function (type, subtemplate) {
+          var element = yat.element(type, subtemplate);
   
-          if (this.nodeIds.hasOwnProperty(options.parentId)) {
-              var parent = this.nodeIds[options.parentId];
+          // Append the element to the given parent
+          if (parent !== null) parent.ui.add(element.ui);
   
-              parent.append(element);
-          }
-  
-          this.nodeIds[options.nodeId] = element;
-      }
+          // Scan element to find children
+          yat.scan(element, subtemplate);
+      });
   };
   
-  module.exports = Generator;
+  YatDocument.prototype.parse = function (template) {
+      this.scan(null, template);
+      return this;
+  };
+  
+  module.exports = YatDocument;
 
 });
-__tetanize_define('lib/ButtonElement.js', function (require, exports, module) { 
-  var ViewElement = require('lib/ViewElement.js');
+__tetanize_define('index.js', function (require, exports, module) { 
+  var Handlebars = require('node_modules/handlebars/lib/handlebars.js');
+  var JSON3 = require('node_modules/json3/lib/json3.js');
+  var YatDocument = require('lib/YatDocument.js');
+  var wyatt = module.exports = exports = {};
   
-  var ButtonElement = ViewElement.extend({
+  wyatt.compile = function (path) {
+      var file = Titanium.Filesystem.getFile(Titanium.Filesystem.resourcesDirectory, path),
+          rawYat = file.read().toString();
+      return Handlebars.compile(rawYat);
+  };
   
-      create: function (options) {
-          this.ui = Titanium.UI.createButton(options);
+  wyatt.template = function (path) {
+      module._templates = typeof module._templates === 'undefined' ? {} : module._templates;
+      return module._templates.hasOwnProperty(path) ? module._templates[path] : wyatt.compile(path);
+  };
+  
+  wyatt.yat = function (template) {
+      return new YatDocument(module._types).parse(template);
+  };
+  
+  wyatt.render = function (path, ctx) {
+      var template = wyatt.template(path)(ctx);
+      return wyatt.yat(JSON3.parse(template));
+  };
+  
+  wyatt.register = function (type, element) {
+      module._types = typeof module._types === 'undefined' ? {} : module._types;
+      module._types[type] = element;
+  };
+  
+  wyatt.register('Window', require('lib/WindowElement.js'));
+  wyatt.register('Label', require('lib/LabelElement.js'));
+  wyatt.register('View', require('lib/ViewElement.js'));
+
+});
+__tetanize_define('node_modules/json3/lib/json3.js', function (require, exports, module) { 
+  /*! JSON v3.2.5 | http://bestiejs.github.io/json3 | Copyright 2012-2013, Kit Cambridge | http://kit.mit-license.org */
+  ;(function (window) {
+    // Convenience aliases.
+    var getClass = {}.toString, isProperty, forEach, undef;
+  
+    // Detect the `define` function exposed by asynchronous module loaders. The
+    // strict `define` check is necessary for compatibility with `r.js`.
+    var isLoader = typeof define === "function" && define.amd, JSON3 = typeof exports == "object" && exports;
+  
+    if (JSON3 || isLoader) {
+      if (typeof JSON == "object" && JSON) {
+        // Delegate to the native `stringify` and `parse` implementations in
+        // asynchronous module loaders and CommonJS environments.
+        if (JSON3) {
+          JSON3.stringify = JSON.stringify;
+          JSON3.parse = JSON.parse;
+        } else {
+          JSON3 = JSON;
+        }
+      } else if (isLoader) {
+        JSON3 = window.JSON = {};
+      }
+    } else {
+      // Export for web browsers and JavaScript engines.
+      JSON3 = window.JSON || (window.JSON = {});
+    }
+  
+    // Test the `Date#getUTC*` methods. Based on work by @Yaffle.
+    var isExtended = new Date(-3509827334573292);
+    try {
+      // The `getUTCFullYear`, `Month`, and `Date` methods return nonsensical
+      // results for certain dates in Opera >= 10.53.
+      isExtended = isExtended.getUTCFullYear() == -109252 && isExtended.getUTCMonth() === 0 && isExtended.getUTCDate() === 1 &&
+        // Safari < 2.0.2 stores the internal millisecond time value correctly,
+        // but clips the values returned by the date methods to the range of
+        // signed 32-bit integers ([-2 ** 31, 2 ** 31 - 1]).
+        isExtended.getUTCHours() == 10 && isExtended.getUTCMinutes() == 37 && isExtended.getUTCSeconds() == 6 && isExtended.getUTCMilliseconds() == 708;
+    } catch (exception) {}
+  
+    // Internal: Determines whether the native `JSON.stringify` and `parse`
+    // implementations are spec-compliant. Based on work by Ken Snyder.
+    function has(name) {
+      if (name == "bug-string-char-index") {
+        // IE <= 7 doesn't support accessing string characters using square
+        // bracket notation. IE 8 only supports this for primitives.
+        return "a"[0] != "a";
+      }
+      var value, serialized = '{"a":[1,true,false,null,"\\u0000\\b\\n\\f\\r\\t"]}', isAll = name == "json";
+      if (isAll || name == "json-stringify" || name == "json-parse") {
+        // Test `JSON.stringify`.
+        if (name == "json-stringify" || isAll) {
+          var stringify = JSON3.stringify, stringifySupported = typeof stringify == "function" && isExtended;
+          if (stringifySupported) {
+            // A test function object with a custom `toJSON` method.
+            (value = function () {
+              return 1;
+            }).toJSON = value;
+            try {
+              stringifySupported =
+                // Firefox 3.1b1 and b2 serialize string, number, and boolean
+                // primitives as object literals.
+                stringify(0) === "0" &&
+                // FF 3.1b1, b2, and JSON 2 serialize wrapped primitives as object
+                // literals.
+                stringify(new Number()) === "0" &&
+                stringify(new String()) == '""' &&
+                // FF 3.1b1, 2 throw an error if the value is `null`, `undefined`, or
+                // does not define a canonical JSON representation (this applies to
+                // objects with `toJSON` properties as well, *unless* they are nested
+                // within an object or array).
+                stringify(getClass) === undef &&
+                // IE 8 serializes `undefined` as `"undefined"`. Safari <= 5.1.7 and
+                // FF 3.1b3 pass this test.
+                stringify(undef) === undef &&
+                // Safari <= 5.1.7 and FF 3.1b3 throw `Error`s and `TypeError`s,
+                // respectively, if the value is omitted entirely.
+                stringify() === undef &&
+                // FF 3.1b1, 2 throw an error if the given value is not a number,
+                // string, array, object, Boolean, or `null` literal. This applies to
+                // objects with custom `toJSON` methods as well, unless they are nested
+                // inside object or array literals. YUI 3.0.0b1 ignores custom `toJSON`
+                // methods entirely.
+                stringify(value) === "1" &&
+                stringify([value]) == "[1]" &&
+                // Prototype <= 1.6.1 serializes `[undefined]` as `"[]"` instead of
+                // `"[null]"`.
+                stringify([undef]) == "[null]" &&
+                // YUI 3.0.0b1 fails to serialize `null` literals.
+                stringify(null) == "null" &&
+                // FF 3.1b1, 2 halts serialization if an array contains a function:
+                // `[1, true, getClass, 1]` serializes as "[1,true,],". These versions
+                // of Firefox also allow trailing commas in JSON objects and arrays.
+                // FF 3.1b3 elides non-JSON values from objects and arrays, unless they
+                // define custom `toJSON` methods.
+                stringify([undef, getClass, null]) == "[null,null,null]" &&
+                // Simple serialization test. FF 3.1b1 uses Unicode escape sequences
+                // where character escape codes are expected (e.g., `\b` => `\u0008`).
+                stringify({ "a": [value, true, false, null, "\x00\b\n\f\r\t"] }) == serialized &&
+                // FF 3.1b1 and b2 ignore the `filter` and `width` arguments.
+                stringify(null, value) === "1" &&
+                stringify([1, 2], null, 1) == "[\n 1,\n 2\n]" &&
+                // JSON 2, Prototype <= 1.7, and older WebKit builds incorrectly
+                // serialize extended years.
+                stringify(new Date(-8.64e15)) == '"-271821-04-20T00:00:00.000Z"' &&
+                // The milliseconds are optional in ES 5, but required in 5.1.
+                stringify(new Date(8.64e15)) == '"+275760-09-13T00:00:00.000Z"' &&
+                // Firefox <= 11.0 incorrectly serializes years prior to 0 as negative
+                // four-digit years instead of six-digit years. Credits: @Yaffle.
+                stringify(new Date(-621987552e5)) == '"-000001-01-01T00:00:00.000Z"' &&
+                // Safari <= 5.1.5 and Opera >= 10.53 incorrectly serialize millisecond
+                // values less than 1000. Credits: @Yaffle.
+                stringify(new Date(-1)) == '"1969-12-31T23:59:59.999Z"';
+            } catch (exception) {
+              stringifySupported = false;
+            }
+          }
+          if (!isAll) {
+            return stringifySupported;
+          }
+        }
+        // Test `JSON.parse`.
+        if (name == "json-parse" || isAll) {
+          var parse = JSON3.parse;
+          if (typeof parse == "function") {
+            try {
+              // FF 3.1b1, b2 will throw an exception if a bare literal is provided.
+              // Conforming implementations should also coerce the initial argument to
+              // a string prior to parsing.
+              if (parse("0") === 0 && !parse(false)) {
+                // Simple parsing test.
+                value = parse(serialized);
+                var parseSupported = value["a"].length == 5 && value["a"][0] === 1;
+                if (parseSupported) {
+                  try {
+                    // Safari <= 5.1.2 and FF 3.1b1 allow unescaped tabs in strings.
+                    parseSupported = !parse('"\t"');
+                  } catch (exception) {}
+                  if (parseSupported) {
+                    try {
+                      // FF 4.0 and 4.0.1 allow leading `+` signs, and leading and
+                      // trailing decimal points. FF 4.0, 4.0.1, and IE 9-10 also
+                      // allow certain octal literals.
+                      parseSupported = parse("01") !== 1;
+                    } catch (exception) {}
+                  }
+                }
+              }
+            } catch (exception) {
+              parseSupported = false;
+            }
+          }
+          if (!isAll) {
+            return parseSupported;
+          }
+        }
+        return stringifySupported && parseSupported;
+      }
+    }
+  
+    if (!has("json")) {
+      // Common `[[Class]]` name aliases.
+      var functionClass = "[object Function]";
+      var dateClass = "[object Date]";
+      var numberClass = "[object Number]";
+      var stringClass = "[object String]";
+      var arrayClass = "[object Array]";
+      var booleanClass = "[object Boolean]";
+  
+      // Detect incomplete support for accessing string characters by index.
+      var charIndexBuggy = has("bug-string-char-index");
+  
+      // Define additional utility methods if the `Date` methods are buggy.
+      if (!isExtended) {
+        var floor = Math.floor;
+        // A mapping between the months of the year and the number of days between
+        // January 1st and the first of the respective month.
+        var Months = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        // Internal: Calculates the number of days between the Unix epoch and the
+        // first day of the given month.
+        var getDay = function (year, month) {
+          return Months[month] + 365 * (year - 1970) + floor((year - 1969 + (month = +(month > 1))) / 4) - floor((year - 1901 + month) / 100) + floor((year - 1601 + month) / 400);
+        };
       }
   
-  });
+      // Internal: Determines if a property is a direct property of the given
+      // object. Delegates to the native `Object#hasOwnProperty` method.
+      if (!(isProperty = {}.hasOwnProperty)) {
+        isProperty = function (property) {
+          var members = {}, constructor;
+          if ((members.__proto__ = null, members.__proto__ = {
+            // The *proto* property cannot be set multiple times in recent
+            // versions of Firefox and SeaMonkey.
+            "toString": 1
+          }, members).toString != getClass) {
+            // Safari <= 2.0.3 doesn't implement `Object#hasOwnProperty`, but
+            // supports the mutable *proto* property.
+            isProperty = function (property) {
+              // Capture and break the object's prototype chain (see section 8.6.2
+              // of the ES 5.1 spec). The parenthesized expression prevents an
+              // unsafe transformation by the Closure Compiler.
+              var original = this.__proto__, result = property in (this.__proto__ = null, this);
+              // Restore the original prototype chain.
+              this.__proto__ = original;
+              return result;
+            };
+          } else {
+            // Capture a reference to the top-level `Object` constructor.
+            constructor = members.constructor;
+            // Use the `constructor` property to simulate `Object#hasOwnProperty` in
+            // other environments.
+            isProperty = function (property) {
+              var parent = (this.constructor || constructor).prototype;
+              return property in this && !(property in parent && this[property] === parent[property]);
+            };
+          }
+          members = null;
+          return isProperty.call(this, property);
+        };
+      }
   
-  module.exports = ButtonElement;
+      // Internal: A set of primitive types used by `isHostType`.
+      var PrimitiveTypes = {
+        'boolean': 1,
+        'number': 1,
+        'string': 1,
+        'undefined': 1
+      };
+  
+      // Internal: Determines if the given object `property` value is a
+      // non-primitive.
+      var isHostType = function (object, property) {
+        var type = typeof object[property];
+        return type == 'object' ? !!object[property] : !PrimitiveTypes[type];
+      };
+  
+      // Internal: Normalizes the `for...in` iteration algorithm across
+      // environments. Each enumerated key is yielded to a `callback` function.
+      forEach = function (object, callback) {
+        var size = 0, Properties, members, property, forEach;
+  
+        // Tests for bugs in the current environment's `for...in` algorithm. The
+        // `valueOf` property inherits the non-enumerable flag from
+        // `Object.prototype` in older versions of IE, Netscape, and Mozilla.
+        (Properties = function () {
+          this.valueOf = 0;
+        }).prototype.valueOf = 0;
+  
+        // Iterate over a new instance of the `Properties` class.
+        members = new Properties();
+        for (property in members) {
+          // Ignore all properties inherited from `Object.prototype`.
+          if (isProperty.call(members, property)) {
+            size++;
+          }
+        }
+        Properties = members = null;
+  
+        // Normalize the iteration algorithm.
+        if (!size) {
+          // A list of non-enumerable properties inherited from `Object.prototype`.
+          members = ["valueOf", "toString", "toLocaleString", "propertyIsEnumerable", "isPrototypeOf", "hasOwnProperty", "constructor"];
+          // IE <= 8, Mozilla 1.0, and Netscape 6.2 ignore shadowed non-enumerable
+          // properties.
+          forEach = function (object, callback) {
+            var isFunction = getClass.call(object) == functionClass, property, length;
+            var hasProperty = !isFunction && typeof object.constructor != 'function' && isHostType(object, 'hasOwnProperty') ? object.hasOwnProperty : isProperty;
+            for (property in object) {
+              // Gecko <= 1.0 enumerates the `prototype` property of functions under
+              // certain conditions; IE does not.
+              if (!(isFunction && property == "prototype") && hasProperty.call(object, property)) {
+                callback(property);
+              }
+            }
+            // Manually invoke the callback for each non-enumerable property.
+            for (length = members.length; property = members[--length]; hasProperty.call(object, property) && callback(property));
+          };
+        } else if (size == 2) {
+          // Safari <= 2.0.4 enumerates shadowed properties twice.
+          forEach = function (object, callback) {
+            // Create a set of iterated properties.
+            var members = {}, isFunction = getClass.call(object) == functionClass, property;
+            for (property in object) {
+              // Store each property name to prevent double enumeration. The
+              // `prototype` property of functions is not enumerated due to cross-
+              // environment inconsistencies.
+              if (!(isFunction && property == "prototype") && !isProperty.call(members, property) && (members[property] = 1) && isProperty.call(object, property)) {
+                callback(property);
+              }
+            }
+          };
+        } else {
+          // No bugs detected; use the standard `for...in` algorithm.
+          forEach = function (object, callback) {
+            var isFunction = getClass.call(object) == functionClass, property, isConstructor;
+            for (property in object) {
+              if (!(isFunction && property == "prototype") && isProperty.call(object, property) && !(isConstructor = property === "constructor")) {
+                callback(property);
+              }
+            }
+            // Manually invoke the callback for the `constructor` property due to
+            // cross-environment inconsistencies.
+            if (isConstructor || isProperty.call(object, (property = "constructor"))) {
+              callback(property);
+            }
+          };
+        }
+        return forEach(object, callback);
+      };
+  
+      // Public: Serializes a JavaScript `value` as a JSON string. The optional
+      // `filter` argument may specify either a function that alters how object and
+      // array members are serialized, or an array of strings and numbers that
+      // indicates which properties should be serialized. The optional `width`
+      // argument may be either a string or number that specifies the indentation
+      // level of the output.
+      if (!has("json-stringify")) {
+        // Internal: A map of control characters and their escaped equivalents.
+        var Escapes = {
+          92: "\\\\",
+          34: '\\"',
+          8: "\\b",
+          12: "\\f",
+          10: "\\n",
+          13: "\\r",
+          9: "\\t"
+        };
+  
+        // Internal: Converts `value` into a zero-padded string such that its
+        // length is at least equal to `width`. The `width` must be <= 6.
+        var leadingZeroes = "000000";
+        var toPaddedString = function (width, value) {
+          // The `|| 0` expression is necessary to work around a bug in
+          // Opera <= 7.54u2 where `0 == -0`, but `String(-0) !== "0"`.
+          return (leadingZeroes + (value || 0)).slice(-width);
+        };
+  
+        // Internal: Double-quotes a string `value`, replacing all ASCII control
+        // characters (characters with code unit values between 0 and 31) with
+        // their escaped equivalents. This is an implementation of the
+        // `Quote(value)` operation defined in ES 5.1 section 15.12.3.
+        var unicodePrefix = "\\u00";
+        var quote = function (value) {
+          var result = '"', index = 0, length = value.length, isLarge = length > 10 && charIndexBuggy, symbols;
+          if (isLarge) {
+            symbols = value.split("");
+          }
+          for (; index < length; index++) {
+            var charCode = value.charCodeAt(index);
+            // If the character is a control character, append its Unicode or
+            // shorthand escape sequence; otherwise, append the character as-is.
+            switch (charCode) {
+              case 8: case 9: case 10: case 12: case 13: case 34: case 92:
+                result += Escapes[charCode];
+                break;
+              default:
+                if (charCode < 32) {
+                  result += unicodePrefix + toPaddedString(2, charCode.toString(16));
+                  break;
+                }
+                result += isLarge ? symbols[index] : charIndexBuggy ? value.charAt(index) : value[index];
+            }
+          }
+          return result + '"';
+        };
+  
+        // Internal: Recursively serializes an object. Implements the
+        // `Str(key, holder)`, `JO(value)`, and `JA(value)` operations.
+        var serialize = function (property, object, callback, properties, whitespace, indentation, stack) {
+          var value = object[property], className, year, month, date, time, hours, minutes, seconds, milliseconds, results, element, index, length, prefix, hasMembers, result;
+          try {
+            // Necessary for host object support.
+            value = object[property];
+          } catch (exception) {}
+          if (typeof value == "object" && value) {
+            className = getClass.call(value);
+            if (className == dateClass && !isProperty.call(value, "toJSON")) {
+              if (value > -1 / 0 && value < 1 / 0) {
+                // Dates are serialized according to the `Date#toJSON` method
+                // specified in ES 5.1 section 15.9.5.44. See section 15.9.1.15
+                // for the ISO 8601 date time string format.
+                if (getDay) {
+                  // Manually compute the year, month, date, hours, minutes,
+                  // seconds, and milliseconds if the `getUTC*` methods are
+                  // buggy. Adapted from @Yaffle's `date-shim` project.
+                  date = floor(value / 864e5);
+                  for (year = floor(date / 365.2425) + 1970 - 1; getDay(year + 1, 0) <= date; year++);
+                  for (month = floor((date - getDay(year, 0)) / 30.42); getDay(year, month + 1) <= date; month++);
+                  date = 1 + date - getDay(year, month);
+                  // The `time` value specifies the time within the day (see ES
+                  // 5.1 section 15.9.1.2). The formula `(A % B + B) % B` is used
+                  // to compute `A modulo B`, as the `%` operator does not
+                  // correspond to the `modulo` operation for negative numbers.
+                  time = (value % 864e5 + 864e5) % 864e5;
+                  // The hours, minutes, seconds, and milliseconds are obtained by
+                  // decomposing the time within the day. See section 15.9.1.10.
+                  hours = floor(time / 36e5) % 24;
+                  minutes = floor(time / 6e4) % 60;
+                  seconds = floor(time / 1e3) % 60;
+                  milliseconds = time % 1e3;
+                } else {
+                  year = value.getUTCFullYear();
+                  month = value.getUTCMonth();
+                  date = value.getUTCDate();
+                  hours = value.getUTCHours();
+                  minutes = value.getUTCMinutes();
+                  seconds = value.getUTCSeconds();
+                  milliseconds = value.getUTCMilliseconds();
+                }
+                // Serialize extended years correctly.
+                value = (year <= 0 || year >= 1e4 ? (year < 0 ? "-" : "+") + toPaddedString(6, year < 0 ? -year : year) : toPaddedString(4, year)) +
+                  "-" + toPaddedString(2, month + 1) + "-" + toPaddedString(2, date) +
+                  // Months, dates, hours, minutes, and seconds should have two
+                  // digits; milliseconds should have three.
+                  "T" + toPaddedString(2, hours) + ":" + toPaddedString(2, minutes) + ":" + toPaddedString(2, seconds) +
+                  // Milliseconds are optional in ES 5.0, but required in 5.1.
+                  "." + toPaddedString(3, milliseconds) + "Z";
+              } else {
+                value = null;
+              }
+            } else if (typeof value.toJSON == "function" && ((className != numberClass && className != stringClass && className != arrayClass) || isProperty.call(value, "toJSON"))) {
+              // Prototype <= 1.6.1 adds non-standard `toJSON` methods to the
+              // `Number`, `String`, `Date`, and `Array` prototypes. JSON 3
+              // ignores all `toJSON` methods on these objects unless they are
+              // defined directly on an instance.
+              value = value.toJSON(property);
+            }
+          }
+          if (callback) {
+            // If a replacement function was provided, call it to obtain the value
+            // for serialization.
+            value = callback.call(object, property, value);
+          }
+          if (value === null) {
+            return "null";
+          }
+          className = getClass.call(value);
+          if (className == booleanClass) {
+            // Booleans are represented literally.
+            return "" + value;
+          } else if (className == numberClass) {
+            // JSON numbers must be finite. `Infinity` and `NaN` are serialized as
+            // `"null"`.
+            return value > -1 / 0 && value < 1 / 0 ? "" + value : "null";
+          } else if (className == stringClass) {
+            // Strings are double-quoted and escaped.
+            return quote("" + value);
+          }
+          // Recursively serialize objects and arrays.
+          if (typeof value == "object") {
+            // Check for cyclic structures. This is a linear search; performance
+            // is inversely proportional to the number of unique nested objects.
+            for (length = stack.length; length--;) {
+              if (stack[length] === value) {
+                // Cyclic structures cannot be serialized by `JSON.stringify`.
+                throw TypeError();
+              }
+            }
+            // Add the object to the stack of traversed objects.
+            stack.push(value);
+            results = [];
+            // Save the current indentation level and indent one additional level.
+            prefix = indentation;
+            indentation += whitespace;
+            if (className == arrayClass) {
+              // Recursively serialize array elements.
+              for (index = 0, length = value.length; index < length; hasMembers || (hasMembers = true), index++) {
+                element = serialize(index, value, callback, properties, whitespace, indentation, stack);
+                results.push(element === undef ? "null" : element);
+              }
+              result = hasMembers ? (whitespace ? "[\n" + indentation + results.join(",\n" + indentation) + "\n" + prefix + "]" : ("[" + results.join(",") + "]")) : "[]";
+            } else {
+              // Recursively serialize object members. Members are selected from
+              // either a user-specified list of property names, or the object
+              // itself.
+              forEach(properties || value, function (property) {
+                var element = serialize(property, value, callback, properties, whitespace, indentation, stack);
+                if (element !== undef) {
+                  // According to ES 5.1 section 15.12.3: "If `gap` {whitespace}
+                  // is not the empty string, let `member` {quote(property) + ":"}
+                  // be the concatenation of `member` and the `space` character."
+                  // The "`space` character" refers to the literal space
+                  // character, not the `space` {width} argument provided to
+                  // `JSON.stringify`.
+                  results.push(quote(property) + ":" + (whitespace ? " " : "") + element);
+                }
+                hasMembers || (hasMembers = true);
+              });
+              result = hasMembers ? (whitespace ? "{\n" + indentation + results.join(",\n" + indentation) + "\n" + prefix + "}" : ("{" + results.join(",") + "}")) : "{}";
+            }
+            // Remove the object from the traversed object stack.
+            stack.pop();
+            return result;
+          }
+        };
+  
+        // Public: `JSON.stringify`. See ES 5.1 section 15.12.3.
+        JSON3.stringify = function (source, filter, width) {
+          var whitespace, callback, properties;
+          if (typeof filter == "function" || typeof filter == "object" && filter) {
+            if (getClass.call(filter) == functionClass) {
+              callback = filter;
+            } else if (getClass.call(filter) == arrayClass) {
+              // Convert the property names array into a makeshift set.
+              properties = {};
+              for (var index = 0, length = filter.length, value; index < length; value = filter[index++], ((getClass.call(value) == stringClass || getClass.call(value) == numberClass) && (properties[value] = 1)));
+            }
+          }
+          if (width) {
+            if (getClass.call(width) == numberClass) {
+              // Convert the `width` to an integer and create a string containing
+              // `width` number of space characters.
+              if ((width -= width % 1) > 0) {
+                for (whitespace = "", width > 10 && (width = 10); whitespace.length < width; whitespace += " ");
+              }
+            } else if (getClass.call(width) == stringClass) {
+              whitespace = width.length <= 10 ? width : width.slice(0, 10);
+            }
+          }
+          // Opera <= 7.54u2 discards the values associated with empty string keys
+          // (`""`) only if they are used directly within an object member list
+          // (e.g., `!("" in { "": 1})`).
+          return serialize("", (value = {}, value[""] = source, value), callback, properties, whitespace, "", []);
+        };
+      }
+  
+      // Public: Parses a JSON source string.
+      if (!has("json-parse")) {
+        var fromCharCode = String.fromCharCode;
+  
+        // Internal: A map of escaped control characters and their unescaped
+        // equivalents.
+        var Unescapes = {
+          92: "\\",
+          34: '"',
+          47: "/",
+          98: "\b",
+          116: "\t",
+          110: "\n",
+          102: "\f",
+          114: "\r"
+        };
+  
+        // Internal: Stores the parser state.
+        var Index, Source;
+  
+        // Internal: Resets the parser state and throws a `SyntaxError`.
+        var abort = function() {
+          Index = Source = null;
+          throw SyntaxError();
+        };
+  
+        // Internal: Returns the next token, or `"$"` if the parser has reached
+        // the end of the source string. A token may be a string, number, `null`
+        // literal, or Boolean literal.
+        var lex = function () {
+          var source = Source, length = source.length, value, begin, position, isSigned, charCode;
+          while (Index < length) {
+            charCode = source.charCodeAt(Index);
+            switch (charCode) {
+              case 9: case 10: case 13: case 32:
+                // Skip whitespace tokens, including tabs, carriage returns, line
+                // feeds, and space characters.
+                Index++;
+                break;
+              case 123: case 125: case 91: case 93: case 58: case 44:
+                // Parse a punctuator token (`{`, `}`, `[`, `]`, `:`, or `,`) at
+                // the current position.
+                value = charIndexBuggy ? source.charAt(Index) : source[Index];
+                Index++;
+                return value;
+              case 34:
+                // `"` delimits a JSON string; advance to the next character and
+                // begin parsing the string. String tokens are prefixed with the
+                // sentinel `@` character to distinguish them from punctuators and
+                // end-of-string tokens.
+                for (value = "@", Index++; Index < length;) {
+                  charCode = source.charCodeAt(Index);
+                  if (charCode < 32) {
+                    // Unescaped ASCII control characters (those with a code unit
+                    // less than the space character) are not permitted.
+                    abort();
+                  } else if (charCode == 92) {
+                    // A reverse solidus (`\`) marks the beginning of an escaped
+                    // control character (including `"`, `\`, and `/`) or Unicode
+                    // escape sequence.
+                    charCode = source.charCodeAt(++Index);
+                    switch (charCode) {
+                      case 92: case 34: case 47: case 98: case 116: case 110: case 102: case 114:
+                        // Revive escaped control characters.
+                        value += Unescapes[charCode];
+                        Index++;
+                        break;
+                      case 117:
+                        // `\u` marks the beginning of a Unicode escape sequence.
+                        // Advance to the first character and validate the
+                        // four-digit code point.
+                        begin = ++Index;
+                        for (position = Index + 4; Index < position; Index++) {
+                          charCode = source.charCodeAt(Index);
+                          // A valid sequence comprises four hexdigits (case-
+                          // insensitive) that form a single hexadecimal value.
+                          if (!(charCode >= 48 && charCode <= 57 || charCode >= 97 && charCode <= 102 || charCode >= 65 && charCode <= 70)) {
+                            // Invalid Unicode escape sequence.
+                            abort();
+                          }
+                        }
+                        // Revive the escaped character.
+                        value += fromCharCode("0x" + source.slice(begin, Index));
+                        break;
+                      default:
+                        // Invalid escape sequence.
+                        abort();
+                    }
+                  } else {
+                    if (charCode == 34) {
+                      // An unescaped double-quote character marks the end of the
+                      // string.
+                      break;
+                    }
+                    charCode = source.charCodeAt(Index);
+                    begin = Index;
+                    // Optimize for the common case where a string is valid.
+                    while (charCode >= 32 && charCode != 92 && charCode != 34) {
+                      charCode = source.charCodeAt(++Index);
+                    }
+                    // Append the string as-is.
+                    value += source.slice(begin, Index);
+                  }
+                }
+                if (source.charCodeAt(Index) == 34) {
+                  // Advance to the next character and return the revived string.
+                  Index++;
+                  return value;
+                }
+                // Unterminated string.
+                abort();
+              default:
+                // Parse numbers and literals.
+                begin = Index;
+                // Advance past the negative sign, if one is specified.
+                if (charCode == 45) {
+                  isSigned = true;
+                  charCode = source.charCodeAt(++Index);
+                }
+                // Parse an integer or floating-point value.
+                if (charCode >= 48 && charCode <= 57) {
+                  // Leading zeroes are interpreted as octal literals.
+                  if (charCode == 48 && ((charCode = source.charCodeAt(Index + 1)), charCode >= 48 && charCode <= 57)) {
+                    // Illegal octal literal.
+                    abort();
+                  }
+                  isSigned = false;
+                  // Parse the integer component.
+                  for (; Index < length && ((charCode = source.charCodeAt(Index)), charCode >= 48 && charCode <= 57); Index++);
+                  // Floats cannot contain a leading decimal point; however, this
+                  // case is already accounted for by the parser.
+                  if (source.charCodeAt(Index) == 46) {
+                    position = ++Index;
+                    // Parse the decimal component.
+                    for (; position < length && ((charCode = source.charCodeAt(position)), charCode >= 48 && charCode <= 57); position++);
+                    if (position == Index) {
+                      // Illegal trailing decimal.
+                      abort();
+                    }
+                    Index = position;
+                  }
+                  // Parse exponents. The `e` denoting the exponent is
+                  // case-insensitive.
+                  charCode = source.charCodeAt(Index);
+                  if (charCode == 101 || charCode == 69) {
+                    charCode = source.charCodeAt(++Index);
+                    // Skip past the sign following the exponent, if one is
+                    // specified.
+                    if (charCode == 43 || charCode == 45) {
+                      Index++;
+                    }
+                    // Parse the exponential component.
+                    for (position = Index; position < length && ((charCode = source.charCodeAt(position)), charCode >= 48 && charCode <= 57); position++);
+                    if (position == Index) {
+                      // Illegal empty exponent.
+                      abort();
+                    }
+                    Index = position;
+                  }
+                  // Coerce the parsed value to a JavaScript number.
+                  return +source.slice(begin, Index);
+                }
+                // A negative sign may only precede numbers.
+                if (isSigned) {
+                  abort();
+                }
+                // `true`, `false`, and `null` literals.
+                if (source.slice(Index, Index + 4) == "true") {
+                  Index += 4;
+                  return true;
+                } else if (source.slice(Index, Index + 5) == "false") {
+                  Index += 5;
+                  return false;
+                } else if (source.slice(Index, Index + 4) == "null") {
+                  Index += 4;
+                  return null;
+                }
+                // Unrecognized token.
+                abort();
+            }
+          }
+          // Return the sentinel `$` character if the parser has reached the end
+          // of the source string.
+          return "$";
+        };
+  
+        // Internal: Parses a JSON `value` token.
+        var get = function (value) {
+          var results, hasMembers;
+          if (value == "$") {
+            // Unexpected end of input.
+            abort();
+          }
+          if (typeof value == "string") {
+            if ((charIndexBuggy ? value.charAt(0) : value[0]) == "@") {
+              // Remove the sentinel `@` character.
+              return value.slice(1);
+            }
+            // Parse object and array literals.
+            if (value == "[") {
+              // Parses a JSON array, returning a new JavaScript array.
+              results = [];
+              for (;; hasMembers || (hasMembers = true)) {
+                value = lex();
+                // A closing square bracket marks the end of the array literal.
+                if (value == "]") {
+                  break;
+                }
+                // If the array literal contains elements, the current token
+                // should be a comma separating the previous element from the
+                // next.
+                if (hasMembers) {
+                  if (value == ",") {
+                    value = lex();
+                    if (value == "]") {
+                      // Unexpected trailing `,` in array literal.
+                      abort();
+                    }
+                  } else {
+                    // A `,` must separate each array element.
+                    abort();
+                  }
+                }
+                // Elisions and leading commas are not permitted.
+                if (value == ",") {
+                  abort();
+                }
+                results.push(get(value));
+              }
+              return results;
+            } else if (value == "{") {
+              // Parses a JSON object, returning a new JavaScript object.
+              results = {};
+              for (;; hasMembers || (hasMembers = true)) {
+                value = lex();
+                // A closing curly brace marks the end of the object literal.
+                if (value == "}") {
+                  break;
+                }
+                // If the object literal contains members, the current token
+                // should be a comma separator.
+                if (hasMembers) {
+                  if (value == ",") {
+                    value = lex();
+                    if (value == "}") {
+                      // Unexpected trailing `,` in object literal.
+                      abort();
+                    }
+                  } else {
+                    // A `,` must separate each object member.
+                    abort();
+                  }
+                }
+                // Leading commas are not permitted, object property names must be
+                // double-quoted strings, and a `:` must separate each property
+                // name and value.
+                if (value == "," || typeof value != "string" || (charIndexBuggy ? value.charAt(0) : value[0]) != "@" || lex() != ":") {
+                  abort();
+                }
+                results[value.slice(1)] = get(lex());
+              }
+              return results;
+            }
+            // Unexpected token encountered.
+            abort();
+          }
+          return value;
+        };
+  
+        // Internal: Updates a traversed object member.
+        var update = function(source, property, callback) {
+          var element = walk(source, property, callback);
+          if (element === undef) {
+            delete source[property];
+          } else {
+            source[property] = element;
+          }
+        };
+  
+        // Internal: Recursively traverses a parsed JSON object, invoking the
+        // `callback` function for each value. This is an implementation of the
+        // `Walk(holder, name)` operation defined in ES 5.1 section 15.12.2.
+        var walk = function (source, property, callback) {
+          var value = source[property], length;
+          if (typeof value == "object" && value) {
+            // `forEach` can't be used to traverse an array in Opera <= 8.54
+            // because its `Object#hasOwnProperty` implementation returns `false`
+            // for array indices (e.g., `![1, 2, 3].hasOwnProperty("0")`).
+            if (getClass.call(value) == arrayClass) {
+              for (length = value.length; length--;) {
+                update(value, length, callback);
+              }
+            } else {
+              forEach(value, function (property) {
+                update(value, property, callback);
+              });
+            }
+          }
+          return callback.call(source, property, value);
+        };
+  
+        // Public: `JSON.parse`. See ES 5.1 section 15.12.2.
+        JSON3.parse = function (source, callback) {
+          var result, value;
+          Index = 0;
+          Source = "" + source;
+          result = get(lex());
+          // If a JSON string contains multiple tokens, it is invalid.
+          if (lex() != "$") {
+            abort();
+          }
+          // Reset the parser state.
+          Index = Source = null;
+          return callback && getClass.call(callback) == functionClass ? walk((value = {}, value[""] = result, value), "", callback) : result;
+        };
+      }
+    }
+  
+    // Export for asynchronous module loaders.
+    if (isLoader) {
+      define(function () {
+        return JSON3;
+      });
+    }
+  }(this));
+  
 
 });
 __tetanize_define('lib/WindowElement.js', function (require, exports, module) { 
@@ -159,24 +1006,457 @@ __tetanize_define('lib/WindowElement.js', function (require, exports, module) {
   module.exports = WindowElement;
 
 });
+__tetanize_define('lib/LabelElement.js', function (require, exports, module) { 
+  var ViewElement = require('lib/ViewElement.js');
+  
+  var LabelElement = ViewElement.extend({
+  
+      create: function (options) {
+          this.ui = Titanium.UI.createLabel(options);
+      }
+  
+  });
+  
+  module.exports = LabelElement;
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars.js', function (require, exports, module) { 
+  var handlebars = require('node_modules/handlebars/lib/handlebars/base.js'),
+  
+  // Each of these augment the Handlebars object. No need to setup here.
+  // (This is done to easily share code between commonjs and browse envs)
+    utils = require('node_modules/handlebars/lib/handlebars/utils.js'),
+    compiler = require('node_modules/handlebars/lib/handlebars/compiler/index.js'),
+    runtime = require('node_modules/handlebars/lib/handlebars/runtime.js');
+  
+  var create = function() {
+    var hb = handlebars.create();
+  
+    utils.attach(hb);
+    compiler.attach(hb);
+    runtime.attach(hb);
+  
+    return hb;
+  };
+  
+  var Handlebars = create();
+  Handlebars.create = create;
+  
+  module.exports = Handlebars; // instantiate an instance
+  
+  // Publish a Node.js require() handler for .handlebars and .hbs files
+  if (require.extensions) {
+    var extension = function(module, filename) {
+      var fs = require("fs");
+      var templateString = fs.readFileSync(filename, "utf8");
+      module.exports = Handlebars.compile(templateString);
+    };
+    require.extensions[".handlebars"] = extension;
+    require.extensions[".hbs"] = extension;
+  }
+  
+  // BEGIN(BROWSER)
+  
+  // END(BROWSER)
+  
+  // USAGE:
+  // var handlebars = require('handlebars');
+  
+  // var singleton = handlebars.Handlebars,
+  //  local = handlebars.create();
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/base.js', function (require, exports, module) { 
+  /*jshint eqnull: true */
+  
+  module.exports.create = function() {
+  
+  var Handlebars = {};
+  
+  // BEGIN(BROWSER)
+  
+  Handlebars.VERSION = "1.0.0";
+  Handlebars.COMPILER_REVISION = 4;
+  
+  Handlebars.REVISION_CHANGES = {
+    1: '<= 1.0.rc.2', // 1.0.rc.2 is actually rev2 but doesn't report it
+    2: '== 1.0.0-rc.3',
+    3: '== 1.0.0-rc.4',
+    4: '>= 1.0.0'
+  };
+  
+  Handlebars.helpers  = {};
+  Handlebars.partials = {};
+  
+  var toString = Object.prototype.toString,
+      functionType = '[object Function]',
+      objectType = '[object Object]';
+  
+  Handlebars.registerHelper = function(name, fn, inverse) {
+    if (toString.call(name) === objectType) {
+      if (inverse || fn) { throw new Handlebars.Exception('Arg not supported with multiple helpers'); }
+      Handlebars.Utils.extend(this.helpers, name);
+    } else {
+      if (inverse) { fn.not = inverse; }
+      this.helpers[name] = fn;
+    }
+  };
+  
+  Handlebars.registerPartial = function(name, str) {
+    if (toString.call(name) === objectType) {
+      Handlebars.Utils.extend(this.partials,  name);
+    } else {
+      this.partials[name] = str;
+    }
+  };
+  
+  Handlebars.registerHelper('helperMissing', function(arg) {
+    if(arguments.length === 2) {
+      return undefined;
+    } else {
+      throw new Error("Missing helper: '" + arg + "'");
+    }
+  });
+  
+  Handlebars.registerHelper('blockHelperMissing', function(context, options) {
+    var inverse = options.inverse || function() {}, fn = options.fn;
+  
+    var type = toString.call(context);
+  
+    if(type === functionType) { context = context.call(this); }
+  
+    if(context === true) {
+      return fn(this);
+    } else if(context === false || context == null) {
+      return inverse(this);
+    } else if(type === "[object Array]") {
+      if(context.length > 0) {
+        return Handlebars.helpers.each(context, options);
+      } else {
+        return inverse(this);
+      }
+    } else {
+      return fn(context);
+    }
+  });
+  
+  Handlebars.K = function() {};
+  
+  Handlebars.createFrame = Object.create || function(object) {
+    Handlebars.K.prototype = object;
+    var obj = new Handlebars.K();
+    Handlebars.K.prototype = null;
+    return obj;
+  };
+  
+  Handlebars.logger = {
+    DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3, level: 3,
+  
+    methodMap: {0: 'debug', 1: 'info', 2: 'warn', 3: 'error'},
+  
+    // can be overridden in the host environment
+    log: function(level, obj) {
+      if (Handlebars.logger.level <= level) {
+        var method = Handlebars.logger.methodMap[level];
+        if (typeof console !== 'undefined' && console[method]) {
+          console[method].call(console, obj);
+        }
+      }
+    }
+  };
+  
+  Handlebars.log = function(level, obj) { Handlebars.logger.log(level, obj); };
+  
+  Handlebars.registerHelper('each', function(context, options) {
+    var fn = options.fn, inverse = options.inverse;
+    var i = 0, ret = "", data;
+  
+    var type = toString.call(context);
+    if(type === functionType) { context = context.call(this); }
+  
+    if (options.data) {
+      data = Handlebars.createFrame(options.data);
+    }
+  
+    if(context && typeof context === 'object') {
+      if(context instanceof Array){
+        for(var j = context.length; i<j; i++) {
+          if (data) { data.index = i; }
+          ret = ret + fn(context[i], { data: data });
+        }
+      } else {
+        for(var key in context) {
+          if(context.hasOwnProperty(key)) {
+            if(data) { data.key = key; }
+            ret = ret + fn(context[key], {data: data});
+            i++;
+          }
+        }
+      }
+    }
+  
+    if(i === 0){
+      ret = inverse(this);
+    }
+  
+    return ret;
+  });
+  
+  Handlebars.registerHelper('if', function(conditional, options) {
+    var type = toString.call(conditional);
+    if(type === functionType) { conditional = conditional.call(this); }
+  
+    if(!conditional || Handlebars.Utils.isEmpty(conditional)) {
+      return options.inverse(this);
+    } else {
+      return options.fn(this);
+    }
+  });
+  
+  Handlebars.registerHelper('unless', function(conditional, options) {
+    return Handlebars.helpers['if'].call(this, conditional, {fn: options.inverse, inverse: options.fn});
+  });
+  
+  Handlebars.registerHelper('with', function(context, options) {
+    var type = toString.call(context);
+    if(type === functionType) { context = context.call(this); }
+  
+    if (!Handlebars.Utils.isEmpty(context)) return options.fn(context);
+  });
+  
+  Handlebars.registerHelper('log', function(context, options) {
+    var level = options.data && options.data.level != null ? parseInt(options.data.level, 10) : 1;
+    Handlebars.log(level, context);
+  });
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/utils.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
+  
+  var toString = Object.prototype.toString;
+  
+  // BEGIN(BROWSER)
+  
+  var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
+  
+  Handlebars.Exception = function(message) {
+    var tmp = Error.prototype.constructor.apply(this, arguments);
+  
+    // Unfortunately errors are not enumerable in Chrome (at least), so `for prop in tmp` doesn't work.
+    for (var idx = 0; idx < errorProps.length; idx++) {
+      this[errorProps[idx]] = tmp[errorProps[idx]];
+    }
+  };
+  Handlebars.Exception.prototype = new Error();
+  
+  // Build out our basic SafeString type
+  Handlebars.SafeString = function(string) {
+    this.string = string;
+  };
+  Handlebars.SafeString.prototype.toString = function() {
+    return this.string.toString();
+  };
+  
+  var escape = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "`": "&#x60;"
+  };
+  
+  var badChars = /[&<>"'`]/g;
+  var possible = /[&<>"'`]/;
+  
+  var escapeChar = function(chr) {
+    return escape[chr] || "&amp;";
+  };
+  
+  Handlebars.Utils = {
+    extend: function(obj, value) {
+      for(var key in value) {
+        if(value.hasOwnProperty(key)) {
+          obj[key] = value[key];
+        }
+      }
+    },
+  
+    escapeExpression: function(string) {
+      // don't escape SafeStrings, since they're already safe
+      if (string instanceof Handlebars.SafeString) {
+        return string.toString();
+      } else if (string == null || string === false) {
+        return "";
+      }
+  
+      // Force a string conversion as this will be done by the append regardless and
+      // the regex test will do this transparently behind the scenes, causing issues if
+      // an object's to string has escaped characters in it.
+      string = string.toString();
+  
+      if(!possible.test(string)) { return string; }
+      return string.replace(badChars, escapeChar);
+    },
+  
+    isEmpty: function(value) {
+      if (!value && value !== 0) {
+        return true;
+      } else if(toString.call(value) === "[object Array]" && value.length === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/runtime.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
+  
+  // BEGIN(BROWSER)
+  
+  Handlebars.VM = {
+    template: function(templateSpec) {
+      // Just add water
+      var container = {
+        escapeExpression: Handlebars.Utils.escapeExpression,
+        invokePartial: Handlebars.VM.invokePartial,
+        programs: [],
+        program: function(i, fn, data) {
+          var programWrapper = this.programs[i];
+          if(data) {
+            programWrapper = Handlebars.VM.program(i, fn, data);
+          } else if (!programWrapper) {
+            programWrapper = this.programs[i] = Handlebars.VM.program(i, fn);
+          }
+          return programWrapper;
+        },
+        merge: function(param, common) {
+          var ret = param || common;
+  
+          if (param && common) {
+            ret = {};
+            Handlebars.Utils.extend(ret, common);
+            Handlebars.Utils.extend(ret, param);
+          }
+          return ret;
+        },
+        programWithDepth: Handlebars.VM.programWithDepth,
+        noop: Handlebars.VM.noop,
+        compilerInfo: null
+      };
+  
+      return function(context, options) {
+        options = options || {};
+        var result = templateSpec.call(container, Handlebars, context, options.helpers, options.partials, options.data);
+  
+        var compilerInfo = container.compilerInfo || [],
+            compilerRevision = compilerInfo[0] || 1,
+            currentRevision = Handlebars.COMPILER_REVISION;
+  
+        if (compilerRevision !== currentRevision) {
+          if (compilerRevision < currentRevision) {
+            var runtimeVersions = Handlebars.REVISION_CHANGES[currentRevision],
+                compilerVersions = Handlebars.REVISION_CHANGES[compilerRevision];
+            throw "Template was precompiled with an older version of Handlebars than the current runtime. "+
+                  "Please update your precompiler to a newer version ("+runtimeVersions+") or downgrade your runtime to an older version ("+compilerVersions+").";
+          } else {
+            // Use the embedded version info since the runtime doesn't know about this revision yet
+            throw "Template was precompiled with a newer version of Handlebars than the current runtime. "+
+                  "Please update your runtime to a newer version ("+compilerInfo[1]+").";
+          }
+        }
+  
+        return result;
+      };
+    },
+  
+    programWithDepth: function(i, fn, data /*, $depth */) {
+      var args = Array.prototype.slice.call(arguments, 3);
+  
+      var program = function(context, options) {
+        options = options || {};
+  
+        return fn.apply(this, [context, options.data || data].concat(args));
+      };
+      program.program = i;
+      program.depth = args.length;
+      return program;
+    },
+    program: function(i, fn, data) {
+      var program = function(context, options) {
+        options = options || {};
+  
+        return fn(context, options.data || data);
+      };
+      program.program = i;
+      program.depth = 0;
+      return program;
+    },
+    noop: function() { return ""; },
+    invokePartial: function(partial, name, context, helpers, partials, data) {
+      var options = { helpers: helpers, partials: partials, data: data };
+  
+      if(partial === undefined) {
+        throw new Handlebars.Exception("The partial " + name + " could not be found");
+      } else if(partial instanceof Function) {
+        return partial(context, options);
+      } else if (!Handlebars.compile) {
+        throw new Handlebars.Exception("The partial " + name + " could not be compiled when running in runtime-only mode");
+      } else {
+        partials[name] = Handlebars.compile(partial, {data: data !== undefined});
+        return partials[name](context, options);
+      }
+    }
+  };
+  
+  Handlebars.template = Handlebars.VM.template;
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  
+  };
+  
+
+});
 __tetanize_define('lib/ViewElement.js', function (require, exports, module) { 
   var extend = require('node_modules/extendable/index.js');
   
-  function ViewElement() {}
-  ViewElement.prototype = {
-      
-      create: function (options) {
-          console.log('creating view with', options);
-          this.ui = Titanium.UI.createView(options);
-      },
+  function ViewElement(template) {}
   
-      append: function (el) {
-          this.ui.add(el.ui);
-      },
+  ViewElement.prototype.patch = function (keys) {
+      var element = this;
   
-      click: function (cb) {
-          this.ui.addEventListener('click', cb);
-      }
+      Object.keys(keys).filter(function (k) {return k[0] === '_'}).forEach(function(key) {
+          element[key] = keys[key];
+      });
+  };
+  
+  ViewElement.prototype.create = function (options) {
+      this.ui = Titanium.UI.createView(options);
+  };
+  
+  ViewElement.prototype.append = function (el) {
+      this.ui.add(el.ui);
+  };
+  
+  ViewElement.prototype.click = function (cb) {
+      this.ui.addEventListener('click', cb);
   };
   
   ViewElement.extend = extend;
@@ -271,980 +1551,2150 @@ __tetanize_define('node_modules/extendable/index.js', function (require, exports
   
 
 });
-__tetanize_define('node_modules/string/lib/string.js', function (require, exports, module) { 
-  /*
-  string.js - Copyright (C) 2012-2013, JP Richardson <jprichardson@gmail.com>
-  */
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/index.js', function (require, exports, module) { 
+  // Each of these module will augment the Handlebars object as it loads. No need to perform addition operations
+  module.exports.attach = function(Handlebars) {
   
-  !(function() {
-    "use strict";
+  var visitor = require('node_modules/handlebars/lib/handlebars/compiler/visitor.js'),
+      printer = require('node_modules/handlebars/lib/handlebars/compiler/printer.js'),
+      ast = require('node_modules/handlebars/lib/handlebars/compiler/ast.js'),
+      compiler = require('node_modules/handlebars/lib/handlebars/compiler/compiler.js');
   
-    var VERSION = '1.6.0';
+  visitor.attach(Handlebars);
+  printer.attach(Handlebars);
+  ast.attach(Handlebars);
+  compiler.attach(Handlebars);
   
-    var ENTITIES = {};
+  return Handlebars;
   
-  //******************************************************************************
-  // Added an initialize function which is essentially the code from the S
-  // constructor.  Now, the S constructor calls this and a new method named
-  // setValue calls it as well.  The setValue function allows constructors for
-  // modules that extend string.js to set the initial value of an object without
-  // knowing the internal workings of string.js.
-  //
-  // Also, all methods which return a new S object now call:
-  //
-  //      return new this.constructor(s);
-  //
-  // instead of:
-  //
-  //      return new S(s);
-  //
-  // This allows extended objects to keep their proper instanceOf and constructor.
-  //******************************************************************************
+  };
   
-    function initialize (object, s) {
-      if (s !== null && s !== undefined) {
-        if (typeof s === 'string')
-          object.s = s;
-        else
-          object.s = s.toString();
-      } else {
-        object.s = s; //null or undefined
-      }
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/visitor.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
   
-      object.orig = s; //original object, currently only used by toCSV() and toBoolean()
+  // BEGIN(BROWSER)
   
-      if (s !== null && s !== undefined) {
-        if (object.__defineGetter__) {
-          object.__defineGetter__('length', function() {
-            return object.s.length;
-          })
-        } else {
-          object.length = s.length;
-        }
-      } else {
-        object.length = -1;
-      }
+  Handlebars.Visitor = function() {};
+  
+  Handlebars.Visitor.prototype = {
+    accept: function(object) {
+      return this[object.type](object);
+    }
+  };
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+  
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/printer.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
+  
+  // BEGIN(BROWSER)
+  
+  Handlebars.print = function(ast) {
+    return new Handlebars.PrintVisitor().accept(ast);
+  };
+  
+  Handlebars.PrintVisitor = function() { this.padding = 0; };
+  Handlebars.PrintVisitor.prototype = new Handlebars.Visitor();
+  
+  Handlebars.PrintVisitor.prototype.pad = function(string, newline) {
+    var out = "";
+  
+    for(var i=0,l=this.padding; i<l; i++) {
+      out = out + "  ";
     }
   
-    function S(s) {
-    	initialize(this, s);
+    out = out + string;
+  
+    if(newline !== false) { out = out + "\n"; }
+    return out;
+  };
+  
+  Handlebars.PrintVisitor.prototype.program = function(program) {
+    var out = "",
+        statements = program.statements,
+        inverse = program.inverse,
+        i, l;
+  
+    for(i=0, l=statements.length; i<l; i++) {
+      out = out + this.accept(statements[i]);
     }
   
-    var __nsp = String.prototype;
-    var __sp = S.prototype = {
-  
-      between: function(left, right) {
-        var s = this.s;
-        var startPos = s.indexOf(left);
-        var endPos = s.indexOf(right);
-        var start = startPos + left.length;
-        return new this.constructor(endPos > startPos ?  s.slice(start, endPos) : "");
-      },
-  
-      //# modified slightly from https://github.com/epeli/underscore.string
-      camelize: function() {
-        var s = this.trim().s.replace(/(\-|_|\s)+(.)?/g, function(mathc, sep, c) {
-          return (c ? c.toUpperCase() : '');
-        });
-        return new this.constructor(s);
-      },
-  
-      capitalize: function() {
-        return new this.constructor(this.s.substr(0, 1).toUpperCase() + this.s.substring(1).toLowerCase());
-      },
-  
-      charAt: function(index) {
-        return this.s.charAt(index);
-      },
-  
-      chompLeft: function(prefix) {
-        var s = this.s;
-        if (s.indexOf(prefix) === 0) {
-           s = s.slice(prefix.length);
-           return new this.constructor(s);
-        } else {
-          return this;
-        }
-      },
-  
-      chompRight: function(suffix) {
-        if (this.endsWith(suffix)) {
-          var s = this.s;
-          s = s.slice(0, s.length - suffix.length);
-          return new this.constructor(s);
-        } else {
-          return this;
-        }
-      },
-  
-      //#thanks Google
-      collapseWhitespace: function() {
-        var s = this.s.replace(/[\s\xa0]+/g, ' ').replace(/^\s+|\s+$/g, '');
-        return new this.constructor(s);
-      },
-  
-      contains: function(ss) {
-        return this.s.indexOf(ss) >= 0;
-      },
-  
-      count: function(ss) {
-        var count = 0
-          , pos = this.s.indexOf(ss)
-  
-        while (pos >= 0) {
-          count += 1
-          pos = this.s.indexOf(ss, pos + 1)
-        }
-  
-        return count
-      },
-  
-      //#modified from https://github.com/epeli/underscore.string
-      dasherize: function() {
-        var s = this.trim().s.replace(/[_\s]+/g, '-').replace(/([A-Z])/g, '-$1').replace(/-+/g, '-').toLowerCase();
-        return new this.constructor(s);
-      },
-  
-      decodeHtmlEntities: function() { //https://github.com/substack/node-ent/blob/master/index.js
-        var s = this.s;
-        s = s.replace(/&#(\d+);?/g, function (_, code) {
-          return String.fromCharCode(code);
-        })
-        .replace(/&#[xX]([A-Fa-f0-9]+);?/g, function (_, hex) {
-          return String.fromCharCode(parseInt(hex, 16));
-        })
-        .replace(/&([^;\W]+;?)/g, function (m, e) {
-          var ee = e.replace(/;$/, '');
-          var target = ENTITIES[e] || (e.match(/;$/) && ENTITIES[ee]);
-              
-          if (typeof target === 'number') {
-            return String.fromCharCode(target);
-          }
-          else if (typeof target === 'string') {
-            return target;
-          }
-          else {
-            return m;
-          }
-        })
-  
-        return new this.constructor(s);
-      },
-  
-      endsWith: function(suffix) {
-        var l  = this.s.length - suffix.length;
-        return l >= 0 && this.s.indexOf(suffix, l) === l;
-      },
-  
-      escapeHTML: function() { //from underscore.string
-        return new this.constructor(this.s.replace(/[&<>"']/g, function(m){ return '&' + reversedEscapeChars[m] + ';'; }));
-      },
-  
-      ensureLeft: function(prefix) {
-        var s = this.s;
-        if (s.indexOf(prefix) === 0) {
-          return this;
-        } else {
-          return new this.constructor(prefix + s);
-        }
-      },
-  
-      ensureRight: function(suffix) {
-        var s = this.s;
-        if (this.endsWith(suffix))  {
-          return this;
-        } else {
-          return new this.constructor(s + suffix);
-        }
-      },
-  
-      humanize: function() { //modified from underscore.string
-        if (this.s === null || this.s === undefined)
-          return new this.constructor('')
-        var s = this.underscore().replace(/_id$/,'').replace(/_/g, ' ').trim().capitalize()
-        return new this.constructor(s)
-      },
-  
-      isAlpha: function() {
-        return !/[^a-z\xC0-\xFF]/.test(this.s.toLowerCase());
-      },
-  
-      isAlphaNumeric: function() {
-        return !/[^0-9a-z\xC0-\xFF]/.test(this.s.toLowerCase());
-      },
-  
-      isEmpty: function() {
-        return this.s === null || this.s === undefined ? true : /^[\s\xa0]*$/.test(this.s);
-      },
-  
-      isLower: function() {
-        return this.isAlpha() && this.s.toLowerCase() === this.s;
-      },
-  
-      isNumeric: function() {
-        return !/[^0-9]/.test(this.s);
-      },
-  
-      isUpper: function() {
-        return this.isAlpha() && this.s.toUpperCase() === this.s;
-      },
-  
-      left: function(N) {
-        if (N >= 0) {
-          var s = this.s.substr(0, N);
-          return new this.constructor(s);
-        } else {
-          return this.right(-N);
-        }
-      },
-      
-      lines: function() { //convert windows newlines to unix newlines then convert to an Array of lines
-        return this.replaceAll('\r\n', '\n').s.split('\n');
-      },
-  
-      pad: function(len, ch) { //https://github.com/component/pad
-        ch = ch || ' ';
-        if (this.s.length >= len) return new this.constructor(this.s);
-        len = len - this.s.length;
-        var left = Array(Math.ceil(len / 2) + 1).join(ch);
-        var right = Array(Math.floor(len / 2) + 1).join(ch);
-        return new this.constructor(left + this.s + right);
-      },
-  
-      padLeft: function(len, ch) { //https://github.com/component/pad
-        ch = ch || ' ';
-        if (this.s.length >= len) return new this.constructor(this.s);
-        return new this.constructor(Array(len - this.s.length + 1).join(ch) + this.s);
-      },
-  
-      padRight: function(len, ch) { //https://github.com/component/pad
-        ch = ch || ' ';
-        if (this.s.length >= len) return new this.constructor(this.s);
-        return new this.constructor(this.s + Array(len - this.s.length + 1).join(ch));
-      },
-  
-      parseCSV: function(delimiter, qualifier, escape, lineDelimiter) { //try to parse no matter what
-        delimiter = delimiter || ',';
-        escape = escape || '\\'
-        if (typeof qualifier == 'undefined')
-          qualifier = '"';
-  
-        var i = 0, fieldBuffer = [], fields = [], len = this.s.length, inField = false, self = this;
-        var ca = function(i){return self.s.charAt(i)};
-        if (typeof lineDelimiter !== 'undefined') var rows = [];
-  
-        if (!qualifier)
-          inField = true;
-  
-        while (i < len) {
-          var current = ca(i);
-          switch (current) {
-            case escape:
-            //fix for issues #32 and #35
-            if (inField && ((escape !== qualifier) || ca(i+1) === qualifier)) {
-                i += 1;
-                fieldBuffer.push(ca(i));
-                break;
-            }
-            if (escape !== qualifier) break;
-            case qualifier:
-              inField = !inField;
-              break;
-            case delimiter:
-              if (inField && qualifier)
-                fieldBuffer.push(current);
-              else {
-                fields.push(fieldBuffer.join(''))
-                fieldBuffer.length = 0;
-              }
-              break;
-            case lineDelimiter:
-              if (inField) {
-                  fieldBuffer.push(current);
-              } else {
-                  if (rows) {
-                      fields.push(fieldBuffer.join(''))
-                      rows.push(fields);
-                      fields = [];
-                      fieldBuffer.length = 0;
-                  }
-              }
-              break;
-            default:
-              if (inField)
-                fieldBuffer.push(current);
-              break;
-          }
-          i += 1;
-        }
-  
-        fields.push(fieldBuffer.join(''));
-        if (rows) {
-          rows.push(fields);
-          return rows;
-        }
-        return fields;
-      },
-  
-      replaceAll: function(ss, r) {
-        //var s = this.s.replace(new RegExp(ss, 'g'), r);
-        var s = this.s.split(ss).join(r)
-        return new this.constructor(s);
-      },
-  
-      right: function(N) {
-        if (N >= 0) {
-          var s = this.s.substr(this.s.length - N, N);
-          return new this.constructor(s);
-        } else {
-          return this.left(-N);
-        }
-      },
-  
-      setValue: function (s) {
-  	  initialize(this, s);
-  	  return this;
-      },
-  
-      slugify: function() {
-        var sl = (new S(this.s.replace(/[^\w\s-]/g, '').toLowerCase())).dasherize().s;
-        if (sl.charAt(0) === '-')
-          sl = sl.substr(1);
-        return new this.constructor(sl);
-      },
-  
-      startsWith: function(prefix) {
-        return this.s.lastIndexOf(prefix, 0) === 0;
-      },
-  
-      stripPunctuation: function() {
-        //return new this.constructor(this.s.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/g,""));
-        return new this.constructor(this.s.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " "));
-      },
-  
-      stripTags: function() { //from sugar.js
-        var s = this.s, args = arguments.length > 0 ? arguments : [''];
-        multiArgs(args, function(tag) {
-          s = s.replace(RegExp('<\/?' + tag + '[^<>]*>', 'gi'), '');
-        });
-        return new this.constructor(s);
-      },
-  
-      template: function(values, opening, closing) {
-        var s = this.s
-        var opening = opening || Export.TMPL_OPEN
-        var closing = closing || Export.TMPL_CLOSE
-        var r = new RegExp(opening + '(.+?)' + closing, 'g')
-          //, r = /\{\{(.+?)\}\}/g
-        var matches = s.match(r) || [];
-  
-        matches.forEach(function(match) {
-          var key = match.substring(opening.length, match.length - closing.length);//chop {{ and }}
-          if (typeof values[key] != 'undefined')
-            s = s.replace(match, values[key]);
-        });
-        return new this.constructor(s);
-      },
-  
-      times: function(n) {
-        return new this.constructor(new Array(n + 1).join(this.s));
-      },
-  
-      toBoolean: function() {
-        if (typeof this.orig === 'string') {
-          var s = this.s.toLowerCase();
-          return s === 'true' || s === 'yes' || s === 'on';
-        } else
-          return this.orig === true || this.orig === 1;
-      },
-  
-      toFloat: function(precision) {
-        var num = parseFloat(this.s)
-        if (precision)
-          return parseFloat(num.toFixed(precision))
-        else
-          return num
-      },
-  
-      toInt: function() { //thanks Google
-        // If the string starts with '0x' or '-0x', parse as hex.
-        return /^\s*-?0x/i.test(this.s) ? parseInt(this.s, 16) : parseInt(this.s, 10)
-      },
-  
-      trim: function() {
-        var s;
-        if (typeof __nsp.trim === 'undefined') 
-          s = this.s.replace(/(^\s*|\s*$)/g, '')
-        else 
-          s = this.s.trim()
-        return new this.constructor(s);
-      },
-  
-      trimLeft: function() {
-        var s;
-        if (__nsp.trimLeft)
-          s = this.s.trimLeft();
-        else
-          s = this.s.replace(/(^\s*)/g, '');
-        return new this.constructor(s);
-      },
-  
-      trimRight: function() {
-        var s;
-        if (__nsp.trimRight)
-          s = this.s.trimRight();
-        else
-          s = this.s.replace(/\s+$/, '');
-        return new this.constructor(s);
-      },
-  
-      truncate: function(length, pruneStr) { //from underscore.string, author: github.com/rwz
-        var str = this.s;
-  
-        length = ~~length;
-        pruneStr = pruneStr || '...';
-  
-        if (str.length <= length) return new this.constructor(str);
-  
-        var tmpl = function(c){ return c.toUpperCase() !== c.toLowerCase() ? 'A' : ' '; },
-          template = str.slice(0, length+1).replace(/.(?=\W*\w*$)/g, tmpl); // 'Hello, world' -> 'HellAA AAAAA'
-  
-        if (template.slice(template.length-2).match(/\w\w/))
-          template = template.replace(/\s*\S+$/, '');
-        else
-          template = new S(template.slice(0, template.length-1)).trimRight().s;
-  
-        return (template+pruneStr).length > str.length ? new S(str) : new S(str.slice(0, template.length)+pruneStr);
-      },
-  
-      toCSV: function() {
-        var delim = ',', qualifier = '"', escape = '\\', encloseNumbers = true, keys = false;
-        var dataArray = [];
-  
-        function hasVal(it) {
-          return it !== null && it !== '';
-        }
-  
-        if (typeof arguments[0] === 'object') {
-          delim = arguments[0].delimiter || delim;
-          delim = arguments[0].separator || delim;
-          qualifier = arguments[0].qualifier || qualifier;
-          encloseNumbers = !!arguments[0].encloseNumbers;
-          escape = arguments[0].escape || escape;
-          keys = !!arguments[0].keys;
-        } else if (typeof arguments[0] === 'string') {
-          delim = arguments[0];
-        }
-  
-        if (typeof arguments[1] === 'string')
-          qualifier = arguments[1];
-  
-        if (arguments[1] === null)
-          qualifier = null;
-  
-         if (this.orig instanceof Array)
-          dataArray  = this.orig;
-        else { //object
-          for (var key in this.orig)
-            if (this.orig.hasOwnProperty(key))
-              if (keys)
-                dataArray.push(key);
-              else
-                dataArray.push(this.orig[key]);
-        }
-  
-        var rep = escape + qualifier;
-        var buildString = [];
-        for (var i = 0; i < dataArray.length; ++i) {
-          var shouldQualify = hasVal(qualifier)
-          if (typeof dataArray[i] == 'number')
-            shouldQualify &= encloseNumbers;
-          
-          if (shouldQualify)
-            buildString.push(qualifier);
-          
-          if (dataArray[i] !== null && dataArray[i] !== undefined) {
-            var d = new S(dataArray[i]).replaceAll(qualifier, rep).s;
-            buildString.push(d);
-          } else 
-            buildString.push('')
-  
-          if (shouldQualify)
-            buildString.push(qualifier);
-          
-          if (delim)
-            buildString.push(delim);
-        }
-  
-        //chop last delim
-        //console.log(buildString.length)
-        buildString.length = buildString.length - 1;
-        return new this.constructor(buildString.join(''));
-      },
-  
-      toString: function() {
-        return this.s;
-      },
-  
-      //#modified from https://github.com/epeli/underscore.string
-      underscore: function() {
-        var s = this.trim().s.replace(/([a-z\d])([A-Z]+)/g, '$1_$2').replace(/[-\s]+/g, '_').toLowerCase();
-        if ((new S(this.s.charAt(0))).isUpper()) {
-          s = '_' + s;
-        }
-        return new this.constructor(s);
-      },
-  
-      unescapeHTML: function() { //from underscore.string
-        return new this.constructor(this.s.replace(/\&([^;]+);/g, function(entity, entityCode){
-          var match;
-  
-          if (entityCode in escapeChars) {
-            return escapeChars[entityCode];
-          } else if (match = entityCode.match(/^#x([\da-fA-F]+)$/)) {
-            return String.fromCharCode(parseInt(match[1], 16));
-          } else if (match = entityCode.match(/^#(\d+)$/)) {
-            return String.fromCharCode(~~match[1]);
-          } else {
-            return entity;
-          }
-        }));
-      },
-  
-      valueOf: function() {
-        return this.s.valueOf();
-      }
-  
+    this.padding--;
+  
+    return out;
+  };
+  
+  Handlebars.PrintVisitor.prototype.block = function(block) {
+    var out = "";
+  
+    out = out + this.pad("BLOCK:");
+    this.padding++;
+    out = out + this.accept(block.mustache);
+    if (block.program) {
+      out = out + this.pad("PROGRAM:");
+      this.padding++;
+      out = out + this.accept(block.program);
+      this.padding--;
+    }
+    if (block.inverse) {
+      if (block.program) { this.padding++; }
+      out = out + this.pad("{{^}}");
+      this.padding++;
+      out = out + this.accept(block.inverse);
+      this.padding--;
+      if (block.program) { this.padding--; }
+    }
+    this.padding--;
+  
+    return out;
+  };
+  
+  Handlebars.PrintVisitor.prototype.mustache = function(mustache) {
+    var params = mustache.params, paramStrings = [], hash;
+  
+    for(var i=0, l=params.length; i<l; i++) {
+      paramStrings.push(this.accept(params[i]));
     }
   
-    var methodsAdded = [];
-    function extendPrototype() {
-      for (var name in __sp) {
-        (function(name){
-          var func = __sp[name];
-          if (!__nsp.hasOwnProperty(name)) {
-            methodsAdded.push(name);
-            __nsp[name] = function() {
-              String.prototype.s = this;
-              return func.apply(this, arguments);
-            }
-          }
-        })(name);
-      }
+    params = "[" + paramStrings.join(", ") + "]";
+  
+    hash = mustache.hash ? " " + this.accept(mustache.hash) : "";
+  
+    return this.pad("{{ " + this.accept(mustache.id) + " " + params + hash + " }}");
+  };
+  
+  Handlebars.PrintVisitor.prototype.partial = function(partial) {
+    var content = this.accept(partial.partialName);
+    if(partial.context) { content = content + " " + this.accept(partial.context); }
+    return this.pad("{{> " + content + " }}");
+  };
+  
+  Handlebars.PrintVisitor.prototype.hash = function(hash) {
+    var pairs = hash.pairs;
+    var joinedPairs = [], left, right;
+  
+    for(var i=0, l=pairs.length; i<l; i++) {
+      left = pairs[i][0];
+      right = this.accept(pairs[i][1]);
+      joinedPairs.push( left + "=" + right );
     }
   
-    function restorePrototype() {
-      for (var i = 0; i < methodsAdded.length; ++i)
-        delete String.prototype[methodsAdded[i]];
-      methodsAdded.length = 0;
-    }
+    return "HASH{" + joinedPairs.join(", ") + "}";
+  };
   
+  Handlebars.PrintVisitor.prototype.STRING = function(string) {
+    return '"' + string.string + '"';
+  };
   
-  /*************************************
-  /* Attach Native JavaScript String Properties
-  /*************************************/
+  Handlebars.PrintVisitor.prototype.INTEGER = function(integer) {
+    return "INTEGER{" + integer.integer + "}";
+  };
   
-    var nativeProperties = getNativeStringProperties();
-    for (var name in nativeProperties) {
-      (function(name) {
-        var stringProp = __nsp[name];
-        if (typeof stringProp == 'function') {
-          //console.log(stringProp)
-          if (!__sp[name]) {
-            if (nativeProperties[name] === 'string') {
-              __sp[name] = function() {
-                //console.log(name)
-                return new this.constructor(stringProp.apply(this, arguments));
-              }
-            } else {
-              __sp[name] = stringProp;
-            }
-          }
-        }
-      })(name);
-    }
+  Handlebars.PrintVisitor.prototype.BOOLEAN = function(bool) {
+    return "BOOLEAN{" + bool.bool + "}";
+  };
   
-  
-  /*************************************
-  /* Function Aliases
-  /*************************************/
-  
-    __sp.repeat = __sp.times;
-    __sp.include = __sp.contains;
-    __sp.toInteger = __sp.toInt;
-    __sp.toBool = __sp.toBoolean;
-    __sp.decodeHTMLEntities = __sp.decodeHtmlEntities //ensure consistent casing scheme of 'HTML'
-  
-  
-  //******************************************************************************
-  // Set the constructor.  Without this, string.js objects are instances of
-  // Object instead of S.
-  //******************************************************************************
-  
-    __sp.constructor = S;
-  
-  
-  /*************************************
-  /* Private Functions
-  /*************************************/
-  
-    function getNativeStringProperties() {
-      var names = getNativeStringPropertyNames();
-      var retObj = {};
-  
-      for (var i = 0; i < names.length; ++i) {
-        var name = names[i];
-        var func = __nsp[name];
-        try {
-          var type = typeof func.apply('teststring', []);
-          retObj[name] = type;
-        } catch (e) {}
-      }
-      return retObj;
-    }
-  
-    function getNativeStringPropertyNames() {
-      var results = [];
-      if (Object.getOwnPropertyNames) {
-        results = Object.getOwnPropertyNames(__nsp);
-        results.splice(results.indexOf('valueOf'), 1);
-        results.splice(results.indexOf('toString'), 1);
-        return results;
-      } else { //meant for legacy cruft, this could probably be made more efficient
-        var stringNames = {};
-        var objectNames = [];
-        for (var name in String.prototype)
-          stringNames[name] = name;
-  
-        for (var name in Object.prototype)
-          delete stringNames[name];
-  
-        //stringNames['toString'] = 'toString'; //this was deleted with the rest of the object names
-        for (var name in stringNames) {
-          results.push(name);
-        }
-        return results;
-      }
-    }
-  
-    function Export(str) {
-      return new S(str);
-    };
-  
-    //attach exports to StringJSWrapper
-    Export.extendPrototype = extendPrototype;
-    Export.restorePrototype = restorePrototype;
-    Export.VERSION = VERSION;
-    Export.TMPL_OPEN = '{{';
-    Export.TMPL_CLOSE = '}}';
-    Export.ENTITIES = ENTITIES;
-  
-  
-  
-  /*************************************
-  /* Exports
-  /*************************************/
-  
-    if (typeof module !== 'undefined'  && typeof module.exports !== 'undefined') {
-      module.exports = Export;
-  
+  Handlebars.PrintVisitor.prototype.ID = function(id) {
+    var path = id.parts.join("/");
+    if(id.parts.length > 1) {
+      return "PATH:" + path;
     } else {
-  
-      if(typeof define === "function" && define.amd) {
-        define([], function() {
-          return Export;
-        });
-      } else {
-        window.S = Export;
-      }
+      return "ID:" + path;
     }
+  };
+  
+  Handlebars.PrintVisitor.prototype.PARTIAL_NAME = function(partialName) {
+      return "PARTIAL:" + partialName.name;
+  };
+  
+  Handlebars.PrintVisitor.prototype.DATA = function(data) {
+    return "@" + this.accept(data.id);
+  };
+  
+  Handlebars.PrintVisitor.prototype.content = function(content) {
+    return this.pad("CONTENT[ '" + content.string + "' ]");
+  };
+  
+  Handlebars.PrintVisitor.prototype.comment = function(comment) {
+    return this.pad("{{! '" + comment.comment + "' }}");
+  };
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
   
   
-  /*************************************
-  /* 3rd Party Private Functions
-  /*************************************/
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/ast.js', function (require, exports, module) { 
+  exports.attach = function(Handlebars) {
   
-    //from sugar.js
-    function multiArgs(args, fn) {
-      var result = [], i;
-      for(i = 0; i < args.length; i++) {
-        result.push(args[i]);
-        if(fn) fn.call(args, args[i], i);
+  // BEGIN(BROWSER)
+  Handlebars.AST = {};
+  
+  Handlebars.AST.ProgramNode = function(statements, inverse) {
+    this.type = "program";
+    this.statements = statements;
+    if(inverse) { this.inverse = new Handlebars.AST.ProgramNode(inverse); }
+  };
+  
+  Handlebars.AST.MustacheNode = function(rawParams, hash, unescaped) {
+    this.type = "mustache";
+    this.escaped = !unescaped;
+    this.hash = hash;
+  
+    var id = this.id = rawParams[0];
+    var params = this.params = rawParams.slice(1);
+  
+    // a mustache is an eligible helper if:
+    // * its id is simple (a single part, not `this` or `..`)
+    var eligibleHelper = this.eligibleHelper = id.isSimple;
+  
+    // a mustache is definitely a helper if:
+    // * it is an eligible helper, and
+    // * it has at least one parameter or hash segment
+    this.isHelper = eligibleHelper && (params.length || hash);
+  
+    // if a mustache is an eligible helper but not a definite
+    // helper, it is ambiguous, and will be resolved in a later
+    // pass or at runtime.
+  };
+  
+  Handlebars.AST.PartialNode = function(partialName, context) {
+    this.type         = "partial";
+    this.partialName  = partialName;
+    this.context      = context;
+  };
+  
+  Handlebars.AST.BlockNode = function(mustache, program, inverse, close) {
+    var verifyMatch = function(open, close) {
+      if(open.original !== close.original) {
+        throw new Handlebars.Exception(open.original + " doesn't match " + close.original);
       }
-      return result;
-    }
-  
-    //from underscore.string
-    var escapeChars = {
-      lt: '<',
-      gt: '>',
-      quot: '"',
-      apos: "'",
-      amp: '&'
     };
   
-    //from underscore.string
-    var reversedEscapeChars = {};
-    for(var key in escapeChars){ reversedEscapeChars[escapeChars[key]] = key; }
+    verifyMatch(mustache.id, close);
+    this.type = "block";
+    this.mustache = mustache;
+    this.program  = program;
+    this.inverse  = inverse;
   
-    ENTITIES = {
-      "amp" : "&",
-      "gt" : ">",
-      "lt" : "<",
-      "quot" : "\"",
-      "apos" : "'",
-      "AElig" : 198,
-      "Aacute" : 193,
-      "Acirc" : 194,
-      "Agrave" : 192,
-      "Aring" : 197,
-      "Atilde" : 195,
-      "Auml" : 196,
-      "Ccedil" : 199,
-      "ETH" : 208,
-      "Eacute" : 201,
-      "Ecirc" : 202,
-      "Egrave" : 200,
-      "Euml" : 203,
-      "Iacute" : 205,
-      "Icirc" : 206,
-      "Igrave" : 204,
-      "Iuml" : 207,
-      "Ntilde" : 209,
-      "Oacute" : 211,
-      "Ocirc" : 212,
-      "Ograve" : 210,
-      "Oslash" : 216,
-      "Otilde" : 213,
-      "Ouml" : 214,
-      "THORN" : 222,
-      "Uacute" : 218,
-      "Ucirc" : 219,
-      "Ugrave" : 217,
-      "Uuml" : 220,
-      "Yacute" : 221,
-      "aacute" : 225,
-      "acirc" : 226,
-      "aelig" : 230,
-      "agrave" : 224,
-      "aring" : 229,
-      "atilde" : 227,
-      "auml" : 228,
-      "ccedil" : 231,
-      "eacute" : 233,
-      "ecirc" : 234,
-      "egrave" : 232,
-      "eth" : 240,
-      "euml" : 235,
-      "iacute" : 237,
-      "icirc" : 238,
-      "igrave" : 236,
-      "iuml" : 239,
-      "ntilde" : 241,
-      "oacute" : 243,
-      "ocirc" : 244,
-      "ograve" : 242,
-      "oslash" : 248,
-      "otilde" : 245,
-      "ouml" : 246,
-      "szlig" : 223,
-      "thorn" : 254,
-      "uacute" : 250,
-      "ucirc" : 251,
-      "ugrave" : 249,
-      "uuml" : 252,
-      "yacute" : 253,
-      "yuml" : 255,
-      "copy" : 169,
-      "reg" : 174,
-      "nbsp" : 160,
-      "iexcl" : 161,
-      "cent" : 162,
-      "pound" : 163,
-      "curren" : 164,
-      "yen" : 165,
-      "brvbar" : 166,
-      "sect" : 167,
-      "uml" : 168,
-      "ordf" : 170,
-      "laquo" : 171,
-      "not" : 172,
-      "shy" : 173,
-      "macr" : 175,
-      "deg" : 176,
-      "plusmn" : 177,
-      "sup1" : 185,
-      "sup2" : 178,
-      "sup3" : 179,
-      "acute" : 180,
-      "micro" : 181,
-      "para" : 182,
-      "middot" : 183,
-      "cedil" : 184,
-      "ordm" : 186,
-      "raquo" : 187,
-      "frac14" : 188,
-      "frac12" : 189,
-      "frac34" : 190,
-      "iquest" : 191,
-      "times" : 215,
-      "divide" : 247,
-      "OElig;" : 338,
-      "oelig;" : 339,
-      "Scaron;" : 352,
-      "scaron;" : 353,
-      "Yuml;" : 376,
-      "fnof;" : 402,
-      "circ;" : 710,
-      "tilde;" : 732,
-      "Alpha;" : 913,
-      "Beta;" : 914,
-      "Gamma;" : 915,
-      "Delta;" : 916,
-      "Epsilon;" : 917,
-      "Zeta;" : 918,
-      "Eta;" : 919,
-      "Theta;" : 920,
-      "Iota;" : 921,
-      "Kappa;" : 922,
-      "Lambda;" : 923,
-      "Mu;" : 924,
-      "Nu;" : 925,
-      "Xi;" : 926,
-      "Omicron;" : 927,
-      "Pi;" : 928,
-      "Rho;" : 929,
-      "Sigma;" : 931,
-      "Tau;" : 932,
-      "Upsilon;" : 933,
-      "Phi;" : 934,
-      "Chi;" : 935,
-      "Psi;" : 936,
-      "Omega;" : 937,
-      "alpha;" : 945,
-      "beta;" : 946,
-      "gamma;" : 947,
-      "delta;" : 948,
-      "epsilon;" : 949,
-      "zeta;" : 950,
-      "eta;" : 951,
-      "theta;" : 952,
-      "iota;" : 953,
-      "kappa;" : 954,
-      "lambda;" : 955,
-      "mu;" : 956,
-      "nu;" : 957,
-      "xi;" : 958,
-      "omicron;" : 959,
-      "pi;" : 960,
-      "rho;" : 961,
-      "sigmaf;" : 962,
-      "sigma;" : 963,
-      "tau;" : 964,
-      "upsilon;" : 965,
-      "phi;" : 966,
-      "chi;" : 967,
-      "psi;" : 968,
-      "omega;" : 969,
-      "thetasym;" : 977,
-      "upsih;" : 978,
-      "piv;" : 982,
-      "ensp;" : 8194,
-      "emsp;" : 8195,
-      "thinsp;" : 8201,
-      "zwnj;" : 8204,
-      "zwj;" : 8205,
-      "lrm;" : 8206,
-      "rlm;" : 8207,
-      "ndash;" : 8211,
-      "mdash;" : 8212,
-      "lsquo;" : 8216,
-      "rsquo;" : 8217,
-      "sbquo;" : 8218,
-      "ldquo;" : 8220,
-      "rdquo;" : 8221,
-      "bdquo;" : 8222,
-      "dagger;" : 8224,
-      "Dagger;" : 8225,
-      "bull;" : 8226,
-      "hellip;" : 8230,
-      "permil;" : 8240,
-      "prime;" : 8242,
-      "Prime;" : 8243,
-      "lsaquo;" : 8249,
-      "rsaquo;" : 8250,
-      "oline;" : 8254,
-      "frasl;" : 8260,
-      "euro;" : 8364,
-      "image;" : 8465,
-      "weierp;" : 8472,
-      "real;" : 8476,
-      "trade;" : 8482,
-      "alefsym;" : 8501,
-      "larr;" : 8592,
-      "uarr;" : 8593,
-      "rarr;" : 8594,
-      "darr;" : 8595,
-      "harr;" : 8596,
-      "crarr;" : 8629,
-      "lArr;" : 8656,
-      "uArr;" : 8657,
-      "rArr;" : 8658,
-      "dArr;" : 8659,
-      "hArr;" : 8660,
-      "forall;" : 8704,
-      "part;" : 8706,
-      "exist;" : 8707,
-      "empty;" : 8709,
-      "nabla;" : 8711,
-      "isin;" : 8712,
-      "notin;" : 8713,
-      "ni;" : 8715,
-      "prod;" : 8719,
-      "sum;" : 8721,
-      "minus;" : 8722,
-      "lowast;" : 8727,
-      "radic;" : 8730,
-      "prop;" : 8733,
-      "infin;" : 8734,
-      "ang;" : 8736,
-      "and;" : 8743,
-      "or;" : 8744,
-      "cap;" : 8745,
-      "cup;" : 8746,
-      "int;" : 8747,
-      "there4;" : 8756,
-      "sim;" : 8764,
-      "cong;" : 8773,
-      "asymp;" : 8776,
-      "ne;" : 8800,
-      "equiv;" : 8801,
-      "le;" : 8804,
-      "ge;" : 8805,
-      "sub;" : 8834,
-      "sup;" : 8835,
-      "nsub;" : 8836,
-      "sube;" : 8838,
-      "supe;" : 8839,
-      "oplus;" : 8853,
-      "otimes;" : 8855,
-      "perp;" : 8869,
-      "sdot;" : 8901,
-      "lceil;" : 8968,
-      "rceil;" : 8969,
-      "lfloor;" : 8970,
-      "rfloor;" : 8971,
-      "lang;" : 9001,
-      "rang;" : 9002,
-      "loz;" : 9674,
-      "spades;" : 9824,
-      "clubs;" : 9827,
-      "hearts;" : 9829,
-      "diams;" : 9830
+    if (this.inverse && !this.program) {
+      this.isInverse = true;
+    }
+  };
+  
+  Handlebars.AST.ContentNode = function(string) {
+    this.type = "content";
+    this.string = string;
+  };
+  
+  Handlebars.AST.HashNode = function(pairs) {
+    this.type = "hash";
+    this.pairs = pairs;
+  };
+  
+  Handlebars.AST.IdNode = function(parts) {
+    this.type = "ID";
+  
+    var original = "",
+        dig = [],
+        depth = 0;
+  
+    for(var i=0,l=parts.length; i<l; i++) {
+      var part = parts[i].part;
+      original += (parts[i].separator || '') + part;
+  
+      if (part === ".." || part === "." || part === "this") {
+        if (dig.length > 0) { throw new Handlebars.Exception("Invalid path: " + original); }
+        else if (part === "..") { depth++; }
+        else { this.isScoped = true; }
+      }
+      else { dig.push(part); }
     }
   
+    this.original = original;
+    this.parts    = dig;
+    this.string   = dig.join('.');
+    this.depth    = depth;
   
-  }).call(this);
+    // an ID is simple if it only has one part, and that part is not
+    // `..` or `this`.
+    this.isSimple = parts.length === 1 && !this.isScoped && depth === 0;
+  
+    this.stringModeValue = this.string;
+  };
+  
+  Handlebars.AST.PartialNameNode = function(name) {
+    this.type = "PARTIAL_NAME";
+    this.name = name.original;
+  };
+  
+  Handlebars.AST.DataNode = function(id) {
+    this.type = "DATA";
+    this.id = id;
+  };
+  
+  Handlebars.AST.StringNode = function(string) {
+    this.type = "STRING";
+    this.original =
+      this.string =
+      this.stringModeValue = string;
+  };
+  
+  Handlebars.AST.IntegerNode = function(integer) {
+    this.type = "INTEGER";
+    this.original =
+      this.integer = integer;
+    this.stringModeValue = Number(integer);
+  };
+  
+  Handlebars.AST.BooleanNode = function(bool) {
+    this.type = "BOOLEAN";
+    this.bool = bool;
+    this.stringModeValue = bool === "true";
+  };
+  
+  Handlebars.AST.CommentNode = function(comment) {
+    this.type = "comment";
+    this.comment = comment;
+  };
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/compiler.js', function (require, exports, module) { 
+  var compilerbase = require('node_modules/handlebars/lib/handlebars/compiler/base.js');
+  
+  exports.attach = function(Handlebars) {
+  
+  compilerbase.attach(Handlebars);
+  
+  // BEGIN(BROWSER)
+  
+  /*jshint eqnull:true*/
+  var Compiler = Handlebars.Compiler = function() {};
+  var JavaScriptCompiler = Handlebars.JavaScriptCompiler = function() {};
+  
+  // the foundHelper register will disambiguate helper lookup from finding a
+  // function in a context. This is necessary for mustache compatibility, which
+  // requires that context functions in blocks are evaluated by blockHelperMissing,
+  // and then proceed as if the resulting value was provided to blockHelperMissing.
+  
+  Compiler.prototype = {
+    compiler: Compiler,
+  
+    disassemble: function() {
+      var opcodes = this.opcodes, opcode, out = [], params, param;
+  
+      for (var i=0, l=opcodes.length; i<l; i++) {
+        opcode = opcodes[i];
+  
+        if (opcode.opcode === 'DECLARE') {
+          out.push("DECLARE " + opcode.name + "=" + opcode.value);
+        } else {
+          params = [];
+          for (var j=0; j<opcode.args.length; j++) {
+            param = opcode.args[j];
+            if (typeof param === "string") {
+              param = "\"" + param.replace("\n", "\\n") + "\"";
+            }
+            params.push(param);
+          }
+          out.push(opcode.opcode + " " + params.join(" "));
+        }
+      }
+  
+      return out.join("\n");
+    },
+    equals: function(other) {
+      var len = this.opcodes.length;
+      if (other.opcodes.length !== len) {
+        return false;
+      }
+  
+      for (var i = 0; i < len; i++) {
+        var opcode = this.opcodes[i],
+            otherOpcode = other.opcodes[i];
+        if (opcode.opcode !== otherOpcode.opcode || opcode.args.length !== otherOpcode.args.length) {
+          return false;
+        }
+        for (var j = 0; j < opcode.args.length; j++) {
+          if (opcode.args[j] !== otherOpcode.args[j]) {
+            return false;
+          }
+        }
+      }
+  
+      len = this.children.length;
+      if (other.children.length !== len) {
+        return false;
+      }
+      for (i = 0; i < len; i++) {
+        if (!this.children[i].equals(other.children[i])) {
+          return false;
+        }
+      }
+  
+      return true;
+    },
+  
+    guid: 0,
+  
+    compile: function(program, options) {
+      this.children = [];
+      this.depths = {list: []};
+      this.options = options;
+  
+      // These changes will propagate to the other compiler components
+      var knownHelpers = this.options.knownHelpers;
+      this.options.knownHelpers = {
+        'helperMissing': true,
+        'blockHelperMissing': true,
+        'each': true,
+        'if': true,
+        'unless': true,
+        'with': true,
+        'log': true
+      };
+      if (knownHelpers) {
+        for (var name in knownHelpers) {
+          this.options.knownHelpers[name] = knownHelpers[name];
+        }
+      }
+  
+      return this.program(program);
+    },
+  
+    accept: function(node) {
+      return this[node.type](node);
+    },
+  
+    program: function(program) {
+      var statements = program.statements, statement;
+      this.opcodes = [];
+  
+      for(var i=0, l=statements.length; i<l; i++) {
+        statement = statements[i];
+        this[statement.type](statement);
+      }
+      this.isSimple = l === 1;
+  
+      this.depths.list = this.depths.list.sort(function(a, b) {
+        return a - b;
+      });
+  
+      return this;
+    },
+  
+    compileProgram: function(program) {
+      var result = new this.compiler().compile(program, this.options);
+      var guid = this.guid++, depth;
+  
+      this.usePartial = this.usePartial || result.usePartial;
+  
+      this.children[guid] = result;
+  
+      for(var i=0, l=result.depths.list.length; i<l; i++) {
+        depth = result.depths.list[i];
+  
+        if(depth < 2) { continue; }
+        else { this.addDepth(depth - 1); }
+      }
+  
+      return guid;
+    },
+  
+    block: function(block) {
+      var mustache = block.mustache,
+          program = block.program,
+          inverse = block.inverse;
+  
+      if (program) {
+        program = this.compileProgram(program);
+      }
+  
+      if (inverse) {
+        inverse = this.compileProgram(inverse);
+      }
+  
+      var type = this.classifyMustache(mustache);
+  
+      if (type === "helper") {
+        this.helperMustache(mustache, program, inverse);
+      } else if (type === "simple") {
+        this.simpleMustache(mustache);
+  
+        // now that the simple mustache is resolved, we need to
+        // evaluate it by executing `blockHelperMissing`
+        this.opcode('pushProgram', program);
+        this.opcode('pushProgram', inverse);
+        this.opcode('emptyHash');
+        this.opcode('blockValue');
+      } else {
+        this.ambiguousMustache(mustache, program, inverse);
+  
+        // now that the simple mustache is resolved, we need to
+        // evaluate it by executing `blockHelperMissing`
+        this.opcode('pushProgram', program);
+        this.opcode('pushProgram', inverse);
+        this.opcode('emptyHash');
+        this.opcode('ambiguousBlockValue');
+      }
+  
+      this.opcode('append');
+    },
+  
+    hash: function(hash) {
+      var pairs = hash.pairs, pair, val;
+  
+      this.opcode('pushHash');
+  
+      for(var i=0, l=pairs.length; i<l; i++) {
+        pair = pairs[i];
+        val  = pair[1];
+  
+        if (this.options.stringParams) {
+          if(val.depth) {
+            this.addDepth(val.depth);
+          }
+          this.opcode('getContext', val.depth || 0);
+          this.opcode('pushStringParam', val.stringModeValue, val.type);
+        } else {
+          this.accept(val);
+        }
+  
+        this.opcode('assignToHash', pair[0]);
+      }
+      this.opcode('popHash');
+    },
+  
+    partial: function(partial) {
+      var partialName = partial.partialName;
+      this.usePartial = true;
+  
+      if(partial.context) {
+        this.ID(partial.context);
+      } else {
+        this.opcode('push', 'depth0');
+      }
+  
+      this.opcode('invokePartial', partialName.name);
+      this.opcode('append');
+    },
+  
+    content: function(content) {
+      this.opcode('appendContent', content.string);
+    },
+  
+    mustache: function(mustache) {
+      var options = this.options;
+      var type = this.classifyMustache(mustache);
+  
+      if (type === "simple") {
+        this.simpleMustache(mustache);
+      } else if (type === "helper") {
+        this.helperMustache(mustache);
+      } else {
+        this.ambiguousMustache(mustache);
+      }
+  
+      if(mustache.escaped && !options.noEscape) {
+        this.opcode('appendEscaped');
+      } else {
+        this.opcode('append');
+      }
+    },
+  
+    ambiguousMustache: function(mustache, program, inverse) {
+      var id = mustache.id,
+          name = id.parts[0],
+          isBlock = program != null || inverse != null;
+  
+      this.opcode('getContext', id.depth);
+  
+      this.opcode('pushProgram', program);
+      this.opcode('pushProgram', inverse);
+  
+      this.opcode('invokeAmbiguous', name, isBlock);
+    },
+  
+    simpleMustache: function(mustache) {
+      var id = mustache.id;
+  
+      if (id.type === 'DATA') {
+        this.DATA(id);
+      } else if (id.parts.length) {
+        this.ID(id);
+      } else {
+        // Simplified ID for `this`
+        this.addDepth(id.depth);
+        this.opcode('getContext', id.depth);
+        this.opcode('pushContext');
+      }
+  
+      this.opcode('resolvePossibleLambda');
+    },
+  
+    helperMustache: function(mustache, program, inverse) {
+      var params = this.setupFullMustacheParams(mustache, program, inverse),
+          name = mustache.id.parts[0];
+  
+      if (this.options.knownHelpers[name]) {
+        this.opcode('invokeKnownHelper', params.length, name);
+      } else if (this.options.knownHelpersOnly) {
+        throw new Error("You specified knownHelpersOnly, but used the unknown helper " + name);
+      } else {
+        this.opcode('invokeHelper', params.length, name);
+      }
+    },
+  
+    ID: function(id) {
+      this.addDepth(id.depth);
+      this.opcode('getContext', id.depth);
+  
+      var name = id.parts[0];
+      if (!name) {
+        this.opcode('pushContext');
+      } else {
+        this.opcode('lookupOnContext', id.parts[0]);
+      }
+  
+      for(var i=1, l=id.parts.length; i<l; i++) {
+        this.opcode('lookup', id.parts[i]);
+      }
+    },
+  
+    DATA: function(data) {
+      this.options.data = true;
+      if (data.id.isScoped || data.id.depth) {
+        throw new Handlebars.Exception('Scoped data references are not supported: ' + data.original);
+      }
+  
+      this.opcode('lookupData');
+      var parts = data.id.parts;
+      for(var i=0, l=parts.length; i<l; i++) {
+        this.opcode('lookup', parts[i]);
+      }
+    },
+  
+    STRING: function(string) {
+      this.opcode('pushString', string.string);
+    },
+  
+    INTEGER: function(integer) {
+      this.opcode('pushLiteral', integer.integer);
+    },
+  
+    BOOLEAN: function(bool) {
+      this.opcode('pushLiteral', bool.bool);
+    },
+  
+    comment: function() {},
+  
+    // HELPERS
+    opcode: function(name) {
+      this.opcodes.push({ opcode: name, args: [].slice.call(arguments, 1) });
+    },
+  
+    declare: function(name, value) {
+      this.opcodes.push({ opcode: 'DECLARE', name: name, value: value });
+    },
+  
+    addDepth: function(depth) {
+      if(isNaN(depth)) { throw new Error("EWOT"); }
+      if(depth === 0) { return; }
+  
+      if(!this.depths[depth]) {
+        this.depths[depth] = true;
+        this.depths.list.push(depth);
+      }
+    },
+  
+    classifyMustache: function(mustache) {
+      var isHelper   = mustache.isHelper;
+      var isEligible = mustache.eligibleHelper;
+      var options    = this.options;
+  
+      // if ambiguous, we can possibly resolve the ambiguity now
+      if (isEligible && !isHelper) {
+        var name = mustache.id.parts[0];
+  
+        if (options.knownHelpers[name]) {
+          isHelper = true;
+        } else if (options.knownHelpersOnly) {
+          isEligible = false;
+        }
+      }
+  
+      if (isHelper) { return "helper"; }
+      else if (isEligible) { return "ambiguous"; }
+      else { return "simple"; }
+    },
+  
+    pushParams: function(params) {
+      var i = params.length, param;
+  
+      while(i--) {
+        param = params[i];
+  
+        if(this.options.stringParams) {
+          if(param.depth) {
+            this.addDepth(param.depth);
+          }
+  
+          this.opcode('getContext', param.depth || 0);
+          this.opcode('pushStringParam', param.stringModeValue, param.type);
+        } else {
+          this[param.type](param);
+        }
+      }
+    },
+  
+    setupMustacheParams: function(mustache) {
+      var params = mustache.params;
+      this.pushParams(params);
+  
+      if(mustache.hash) {
+        this.hash(mustache.hash);
+      } else {
+        this.opcode('emptyHash');
+      }
+  
+      return params;
+    },
+  
+    // this will replace setupMustacheParams when we're done
+    setupFullMustacheParams: function(mustache, program, inverse) {
+      var params = mustache.params;
+      this.pushParams(params);
+  
+      this.opcode('pushProgram', program);
+      this.opcode('pushProgram', inverse);
+  
+      if(mustache.hash) {
+        this.hash(mustache.hash);
+      } else {
+        this.opcode('emptyHash');
+      }
+  
+      return params;
+    }
+  };
+  
+  var Literal = function(value) {
+    this.value = value;
+  };
+  
+  JavaScriptCompiler.prototype = {
+    // PUBLIC API: You can override these methods in a subclass to provide
+    // alternative compiled forms for name lookup and buffering semantics
+    nameLookup: function(parent, name /* , type*/) {
+      if (/^[0-9]+$/.test(name)) {
+        return parent + "[" + name + "]";
+      } else if (JavaScriptCompiler.isValidJavaScriptVariableName(name)) {
+        return parent + "." + name;
+      }
+      else {
+        return parent + "['" + name + "']";
+      }
+    },
+  
+    appendToBuffer: function(string) {
+      if (this.environment.isSimple) {
+        return "return " + string + ";";
+      } else {
+        return {
+          appendToBuffer: true,
+          content: string,
+          toString: function() { return "buffer += " + string + ";"; }
+        };
+      }
+    },
+  
+    initializeBuffer: function() {
+      return this.quotedString("");
+    },
+  
+    namespace: "Handlebars",
+    // END PUBLIC API
+  
+    compile: function(environment, options, context, asObject) {
+      this.environment = environment;
+      this.options = options || {};
+  
+      Handlebars.log(Handlebars.logger.DEBUG, this.environment.disassemble() + "\n\n");
+  
+      this.name = this.environment.name;
+      this.isChild = !!context;
+      this.context = context || {
+        programs: [],
+        environments: [],
+        aliases: { }
+      };
+  
+      this.preamble();
+  
+      this.stackSlot = 0;
+      this.stackVars = [];
+      this.registers = { list: [] };
+      this.compileStack = [];
+      this.inlineStack = [];
+  
+      this.compileChildren(environment, options);
+  
+      var opcodes = environment.opcodes, opcode;
+  
+      this.i = 0;
+  
+      for(l=opcodes.length; this.i<l; this.i++) {
+        opcode = opcodes[this.i];
+  
+        if(opcode.opcode === 'DECLARE') {
+          this[opcode.name] = opcode.value;
+        } else {
+          this[opcode.opcode].apply(this, opcode.args);
+        }
+      }
+  
+      return this.createFunctionContext(asObject);
+    },
+  
+    nextOpcode: function() {
+      var opcodes = this.environment.opcodes;
+      return opcodes[this.i + 1];
+    },
+  
+    eat: function() {
+      this.i = this.i + 1;
+    },
+  
+    preamble: function() {
+      var out = [];
+  
+      if (!this.isChild) {
+        var namespace = this.namespace;
+  
+        var copies = "helpers = this.merge(helpers, " + namespace + ".helpers);";
+        if (this.environment.usePartial) { copies = copies + " partials = this.merge(partials, " + namespace + ".partials);"; }
+        if (this.options.data) { copies = copies + " data = data || {};"; }
+        out.push(copies);
+      } else {
+        out.push('');
+      }
+  
+      if (!this.environment.isSimple) {
+        out.push(", buffer = " + this.initializeBuffer());
+      } else {
+        out.push("");
+      }
+  
+      // track the last context pushed into place to allow skipping the
+      // getContext opcode when it would be a noop
+      this.lastContext = 0;
+      this.source = out;
+    },
+  
+    createFunctionContext: function(asObject) {
+      var locals = this.stackVars.concat(this.registers.list);
+  
+      if(locals.length > 0) {
+        this.source[1] = this.source[1] + ", " + locals.join(", ");
+      }
+  
+      // Generate minimizer alias mappings
+      if (!this.isChild) {
+        for (var alias in this.context.aliases) {
+          if (this.context.aliases.hasOwnProperty(alias)) {
+            this.source[1] = this.source[1] + ', ' + alias + '=' + this.context.aliases[alias];
+          }
+        }
+      }
+  
+      if (this.source[1]) {
+        this.source[1] = "var " + this.source[1].substring(2) + ";";
+      }
+  
+      // Merge children
+      if (!this.isChild) {
+        this.source[1] += '\n' + this.context.programs.join('\n') + '\n';
+      }
+  
+      if (!this.environment.isSimple) {
+        this.source.push("return buffer;");
+      }
+  
+      var params = this.isChild ? ["depth0", "data"] : ["Handlebars", "depth0", "helpers", "partials", "data"];
+  
+      for(var i=0, l=this.environment.depths.list.length; i<l; i++) {
+        params.push("depth" + this.environment.depths.list[i]);
+      }
+  
+      // Perform a second pass over the output to merge content when possible
+      var source = this.mergeSource();
+  
+      if (!this.isChild) {
+        var revision = Handlebars.COMPILER_REVISION,
+            versions = Handlebars.REVISION_CHANGES[revision];
+        source = "this.compilerInfo = ["+revision+",'"+versions+"'];\n"+source;
+      }
+  
+      if (asObject) {
+        params.push(source);
+  
+        return Function.apply(this, params);
+      } else {
+        var functionSource = 'function ' + (this.name || '') + '(' + params.join(',') + ') {\n  ' + source + '}';
+        Handlebars.log(Handlebars.logger.DEBUG, functionSource + "\n\n");
+        return functionSource;
+      }
+    },
+    mergeSource: function() {
+      // WARN: We are not handling the case where buffer is still populated as the source should
+      // not have buffer append operations as their final action.
+      var source = '',
+          buffer;
+      for (var i = 0, len = this.source.length; i < len; i++) {
+        var line = this.source[i];
+        if (line.appendToBuffer) {
+          if (buffer) {
+            buffer = buffer + '\n    + ' + line.content;
+          } else {
+            buffer = line.content;
+          }
+        } else {
+          if (buffer) {
+            source += 'buffer += ' + buffer + ';\n  ';
+            buffer = undefined;
+          }
+          source += line + '\n  ';
+        }
+      }
+      return source;
+    },
+  
+    // [blockValue]
+    //
+    // On stack, before: hash, inverse, program, value
+    // On stack, after: return value of blockHelperMissing
+    //
+    // The purpose of this opcode is to take a block of the form
+    // `{{#foo}}...{{/foo}}`, resolve the value of `foo`, and
+    // replace it on the stack with the result of properly
+    // invoking blockHelperMissing.
+    blockValue: function() {
+      this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
+  
+      var params = ["depth0"];
+      this.setupParams(0, params);
+  
+      this.replaceStack(function(current) {
+        params.splice(1, 0, current);
+        return "blockHelperMissing.call(" + params.join(", ") + ")";
+      });
+    },
+  
+    // [ambiguousBlockValue]
+    //
+    // On stack, before: hash, inverse, program, value
+    // Compiler value, before: lastHelper=value of last found helper, if any
+    // On stack, after, if no lastHelper: same as [blockValue]
+    // On stack, after, if lastHelper: value
+    ambiguousBlockValue: function() {
+      this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
+  
+      var params = ["depth0"];
+      this.setupParams(0, params);
+  
+      var current = this.topStack();
+      params.splice(1, 0, current);
+  
+      // Use the options value generated from the invocation
+      params[params.length-1] = 'options';
+  
+      this.source.push("if (!" + this.lastHelper + ") { " + current + " = blockHelperMissing.call(" + params.join(", ") + "); }");
+    },
+  
+    // [appendContent]
+    //
+    // On stack, before: ...
+    // On stack, after: ...
+    //
+    // Appends the string value of `content` to the current buffer
+    appendContent: function(content) {
+      this.source.push(this.appendToBuffer(this.quotedString(content)));
+    },
+  
+    // [append]
+    //
+    // On stack, before: value, ...
+    // On stack, after: ...
+    //
+    // Coerces `value` to a String and appends it to the current buffer.
+    //
+    // If `value` is truthy, or 0, it is coerced into a string and appended
+    // Otherwise, the empty string is appended
+    append: function() {
+      // Force anything that is inlined onto the stack so we don't have duplication
+      // when we examine local
+      this.flushInline();
+      var local = this.popStack();
+      this.source.push("if(" + local + " || " + local + " === 0) { " + this.appendToBuffer(local) + " }");
+      if (this.environment.isSimple) {
+        this.source.push("else { " + this.appendToBuffer("''") + " }");
+      }
+    },
+  
+    // [appendEscaped]
+    //
+    // On stack, before: value, ...
+    // On stack, after: ...
+    //
+    // Escape `value` and append it to the buffer
+    appendEscaped: function() {
+      this.context.aliases.escapeExpression = 'this.escapeExpression';
+  
+      this.source.push(this.appendToBuffer("escapeExpression(" + this.popStack() + ")"));
+    },
+  
+    // [getContext]
+    //
+    // On stack, before: ...
+    // On stack, after: ...
+    // Compiler value, after: lastContext=depth
+    //
+    // Set the value of the `lastContext` compiler value to the depth
+    getContext: function(depth) {
+      if(this.lastContext !== depth) {
+        this.lastContext = depth;
+      }
+    },
+  
+    // [lookupOnContext]
+    //
+    // On stack, before: ...
+    // On stack, after: currentContext[name], ...
+    //
+    // Looks up the value of `name` on the current context and pushes
+    // it onto the stack.
+    lookupOnContext: function(name) {
+      this.push(this.nameLookup('depth' + this.lastContext, name, 'context'));
+    },
+  
+    // [pushContext]
+    //
+    // On stack, before: ...
+    // On stack, after: currentContext, ...
+    //
+    // Pushes the value of the current context onto the stack.
+    pushContext: function() {
+      this.pushStackLiteral('depth' + this.lastContext);
+    },
+  
+    // [resolvePossibleLambda]
+    //
+    // On stack, before: value, ...
+    // On stack, after: resolved value, ...
+    //
+    // If the `value` is a lambda, replace it on the stack by
+    // the return value of the lambda
+    resolvePossibleLambda: function() {
+      this.context.aliases.functionType = '"function"';
+  
+      this.replaceStack(function(current) {
+        return "typeof " + current + " === functionType ? " + current + ".apply(depth0) : " + current;
+      });
+    },
+  
+    // [lookup]
+    //
+    // On stack, before: value, ...
+    // On stack, after: value[name], ...
+    //
+    // Replace the value on the stack with the result of looking
+    // up `name` on `value`
+    lookup: function(name) {
+      this.replaceStack(function(current) {
+        return current + " == null || " + current + " === false ? " + current + " : " + this.nameLookup(current, name, 'context');
+      });
+    },
+  
+    // [lookupData]
+    //
+    // On stack, before: ...
+    // On stack, after: data[id], ...
+    //
+    // Push the result of looking up `id` on the current data
+    lookupData: function(id) {
+      this.push('data');
+    },
+  
+    // [pushStringParam]
+    //
+    // On stack, before: ...
+    // On stack, after: string, currentContext, ...
+    //
+    // This opcode is designed for use in string mode, which
+    // provides the string value of a parameter along with its
+    // depth rather than resolving it immediately.
+    pushStringParam: function(string, type) {
+      this.pushStackLiteral('depth' + this.lastContext);
+  
+      this.pushString(type);
+  
+      if (typeof string === 'string') {
+        this.pushString(string);
+      } else {
+        this.pushStackLiteral(string);
+      }
+    },
+  
+    emptyHash: function() {
+      this.pushStackLiteral('{}');
+  
+      if (this.options.stringParams) {
+        this.register('hashTypes', '{}');
+        this.register('hashContexts', '{}');
+      }
+    },
+    pushHash: function() {
+      this.hash = {values: [], types: [], contexts: []};
+    },
+    popHash: function() {
+      var hash = this.hash;
+      this.hash = undefined;
+  
+      if (this.options.stringParams) {
+        this.register('hashContexts', '{' + hash.contexts.join(',') + '}');
+        this.register('hashTypes', '{' + hash.types.join(',') + '}');
+      }
+      this.push('{\n    ' + hash.values.join(',\n    ') + '\n  }');
+    },
+  
+    // [pushString]
+    //
+    // On stack, before: ...
+    // On stack, after: quotedString(string), ...
+    //
+    // Push a quoted version of `string` onto the stack
+    pushString: function(string) {
+      this.pushStackLiteral(this.quotedString(string));
+    },
+  
+    // [push]
+    //
+    // On stack, before: ...
+    // On stack, after: expr, ...
+    //
+    // Push an expression onto the stack
+    push: function(expr) {
+      this.inlineStack.push(expr);
+      return expr;
+    },
+  
+    // [pushLiteral]
+    //
+    // On stack, before: ...
+    // On stack, after: value, ...
+    //
+    // Pushes a value onto the stack. This operation prevents
+    // the compiler from creating a temporary variable to hold
+    // it.
+    pushLiteral: function(value) {
+      this.pushStackLiteral(value);
+    },
+  
+    // [pushProgram]
+    //
+    // On stack, before: ...
+    // On stack, after: program(guid), ...
+    //
+    // Push a program expression onto the stack. This takes
+    // a compile-time guid and converts it into a runtime-accessible
+    // expression.
+    pushProgram: function(guid) {
+      if (guid != null) {
+        this.pushStackLiteral(this.programExpression(guid));
+      } else {
+        this.pushStackLiteral(null);
+      }
+    },
+  
+    // [invokeHelper]
+    //
+    // On stack, before: hash, inverse, program, params..., ...
+    // On stack, after: result of helper invocation
+    //
+    // Pops off the helper's parameters, invokes the helper,
+    // and pushes the helper's return value onto the stack.
+    //
+    // If the helper is not found, `helperMissing` is called.
+    invokeHelper: function(paramSize, name) {
+      this.context.aliases.helperMissing = 'helpers.helperMissing';
+  
+      var helper = this.lastHelper = this.setupHelper(paramSize, name, true);
+      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
+  
+      this.push(helper.name + ' || ' + nonHelper);
+      this.replaceStack(function(name) {
+        return name + ' ? ' + name + '.call(' +
+            helper.callParams + ") " + ": helperMissing.call(" +
+            helper.helperMissingParams + ")";
+      });
+    },
+  
+    // [invokeKnownHelper]
+    //
+    // On stack, before: hash, inverse, program, params..., ...
+    // On stack, after: result of helper invocation
+    //
+    // This operation is used when the helper is known to exist,
+    // so a `helperMissing` fallback is not required.
+    invokeKnownHelper: function(paramSize, name) {
+      var helper = this.setupHelper(paramSize, name);
+      this.push(helper.name + ".call(" + helper.callParams + ")");
+    },
+  
+    // [invokeAmbiguous]
+    //
+    // On stack, before: hash, inverse, program, params..., ...
+    // On stack, after: result of disambiguation
+    //
+    // This operation is used when an expression like `{{foo}}`
+    // is provided, but we don't know at compile-time whether it
+    // is a helper or a path.
+    //
+    // This operation emits more code than the other options,
+    // and can be avoided by passing the `knownHelpers` and
+    // `knownHelpersOnly` flags at compile-time.
+    invokeAmbiguous: function(name, helperCall) {
+      this.context.aliases.functionType = '"function"';
+  
+      this.pushStackLiteral('{}');    // Hash value
+      var helper = this.setupHelper(0, name, helperCall);
+  
+      var helperName = this.lastHelper = this.nameLookup('helpers', name, 'helper');
+  
+      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
+      var nextStack = this.nextStack();
+  
+      this.source.push('if (' + nextStack + ' = ' + helperName + ') { ' + nextStack + ' = ' + nextStack + '.call(' + helper.callParams + '); }');
+      this.source.push('else { ' + nextStack + ' = ' + nonHelper + '; ' + nextStack + ' = typeof ' + nextStack + ' === functionType ? ' + nextStack + '.apply(depth0) : ' + nextStack + '; }');
+    },
+  
+    // [invokePartial]
+    //
+    // On stack, before: context, ...
+    // On stack after: result of partial invocation
+    //
+    // This operation pops off a context, invokes a partial with that context,
+    // and pushes the result of the invocation back.
+    invokePartial: function(name) {
+      var params = [this.nameLookup('partials', name, 'partial'), "'" + name + "'", this.popStack(), "helpers", "partials"];
+  
+      if (this.options.data) {
+        params.push("data");
+      }
+  
+      this.context.aliases.self = "this";
+      this.push("self.invokePartial(" + params.join(", ") + ")");
+    },
+  
+    // [assignToHash]
+    //
+    // On stack, before: value, hash, ...
+    // On stack, after: hash, ...
+    //
+    // Pops a value and hash off the stack, assigns `hash[key] = value`
+    // and pushes the hash back onto the stack.
+    assignToHash: function(key) {
+      var value = this.popStack(),
+          context,
+          type;
+  
+      if (this.options.stringParams) {
+        type = this.popStack();
+        context = this.popStack();
+      }
+  
+      var hash = this.hash;
+      if (context) {
+        hash.contexts.push("'" + key + "': " + context);
+      }
+      if (type) {
+        hash.types.push("'" + key + "': " + type);
+      }
+      hash.values.push("'" + key + "': (" + value + ")");
+    },
+  
+    // HELPERS
+  
+    compiler: JavaScriptCompiler,
+  
+    compileChildren: function(environment, options) {
+      var children = environment.children, child, compiler;
+  
+      for(var i=0, l=children.length; i<l; i++) {
+        child = children[i];
+        compiler = new this.compiler();
+  
+        var index = this.matchExistingProgram(child);
+  
+        if (index == null) {
+          this.context.programs.push('');     // Placeholder to prevent name conflicts for nested children
+          index = this.context.programs.length;
+          child.index = index;
+          child.name = 'program' + index;
+          this.context.programs[index] = compiler.compile(child, options, this.context);
+          this.context.environments[index] = child;
+        } else {
+          child.index = index;
+          child.name = 'program' + index;
+        }
+      }
+    },
+    matchExistingProgram: function(child) {
+      for (var i = 0, len = this.context.environments.length; i < len; i++) {
+        var environment = this.context.environments[i];
+        if (environment && environment.equals(child)) {
+          return i;
+        }
+      }
+    },
+  
+    programExpression: function(guid) {
+      this.context.aliases.self = "this";
+  
+      if(guid == null) {
+        return "self.noop";
+      }
+  
+      var child = this.environment.children[guid],
+          depths = child.depths.list, depth;
+  
+      var programParams = [child.index, child.name, "data"];
+  
+      for(var i=0, l = depths.length; i<l; i++) {
+        depth = depths[i];
+  
+        if(depth === 1) { programParams.push("depth0"); }
+        else { programParams.push("depth" + (depth - 1)); }
+      }
+  
+      return (depths.length === 0 ? "self.program(" : "self.programWithDepth(") + programParams.join(", ") + ")";
+    },
+  
+    register: function(name, val) {
+      this.useRegister(name);
+      this.source.push(name + " = " + val + ";");
+    },
+  
+    useRegister: function(name) {
+      if(!this.registers[name]) {
+        this.registers[name] = true;
+        this.registers.list.push(name);
+      }
+    },
+  
+    pushStackLiteral: function(item) {
+      return this.push(new Literal(item));
+    },
+  
+    pushStack: function(item) {
+      this.flushInline();
+  
+      var stack = this.incrStack();
+      if (item) {
+        this.source.push(stack + " = " + item + ";");
+      }
+      this.compileStack.push(stack);
+      return stack;
+    },
+  
+    replaceStack: function(callback) {
+      var prefix = '',
+          inline = this.isInline(),
+          stack;
+  
+      // If we are currently inline then we want to merge the inline statement into the
+      // replacement statement via ','
+      if (inline) {
+        var top = this.popStack(true);
+  
+        if (top instanceof Literal) {
+          // Literals do not need to be inlined
+          stack = top.value;
+        } else {
+          // Get or create the current stack name for use by the inline
+          var name = this.stackSlot ? this.topStackName() : this.incrStack();
+  
+          prefix = '(' + this.push(name) + ' = ' + top + '),';
+          stack = this.topStack();
+        }
+      } else {
+        stack = this.topStack();
+      }
+  
+      var item = callback.call(this, stack);
+  
+      if (inline) {
+        if (this.inlineStack.length || this.compileStack.length) {
+          this.popStack();
+        }
+        this.push('(' + prefix + item + ')');
+      } else {
+        // Prevent modification of the context depth variable. Through replaceStack
+        if (!/^stack/.test(stack)) {
+          stack = this.nextStack();
+        }
+  
+        this.source.push(stack + " = (" + prefix + item + ");");
+      }
+      return stack;
+    },
+  
+    nextStack: function() {
+      return this.pushStack();
+    },
+  
+    incrStack: function() {
+      this.stackSlot++;
+      if(this.stackSlot > this.stackVars.length) { this.stackVars.push("stack" + this.stackSlot); }
+      return this.topStackName();
+    },
+    topStackName: function() {
+      return "stack" + this.stackSlot;
+    },
+    flushInline: function() {
+      var inlineStack = this.inlineStack;
+      if (inlineStack.length) {
+        this.inlineStack = [];
+        for (var i = 0, len = inlineStack.length; i < len; i++) {
+          var entry = inlineStack[i];
+          if (entry instanceof Literal) {
+            this.compileStack.push(entry);
+          } else {
+            this.pushStack(entry);
+          }
+        }
+      }
+    },
+    isInline: function() {
+      return this.inlineStack.length;
+    },
+  
+    popStack: function(wrapped) {
+      var inline = this.isInline(),
+          item = (inline ? this.inlineStack : this.compileStack).pop();
+  
+      if (!wrapped && (item instanceof Literal)) {
+        return item.value;
+      } else {
+        if (!inline) {
+          this.stackSlot--;
+        }
+        return item;
+      }
+    },
+  
+    topStack: function(wrapped) {
+      var stack = (this.isInline() ? this.inlineStack : this.compileStack),
+          item = stack[stack.length - 1];
+  
+      if (!wrapped && (item instanceof Literal)) {
+        return item.value;
+      } else {
+        return item;
+      }
+    },
+  
+    quotedString: function(str) {
+      return '"' + str
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\u2028/g, '\\u2028')   // Per Ecma-262 7.3 + 7.8.4
+        .replace(/\u2029/g, '\\u2029') + '"';
+    },
+  
+    setupHelper: function(paramSize, name, missingParams) {
+      var params = [];
+      this.setupParams(paramSize, params, missingParams);
+      var foundHelper = this.nameLookup('helpers', name, 'helper');
+  
+      return {
+        params: params,
+        name: foundHelper,
+        callParams: ["depth0"].concat(params).join(", "),
+        helperMissingParams: missingParams && ["depth0", this.quotedString(name)].concat(params).join(", ")
+      };
+    },
+  
+    // the params and contexts arguments are passed in arrays
+    // to fill in
+    setupParams: function(paramSize, params, useRegister) {
+      var options = [], contexts = [], types = [], param, inverse, program;
+  
+      options.push("hash:" + this.popStack());
+  
+      inverse = this.popStack();
+      program = this.popStack();
+  
+      // Avoid setting fn and inverse if neither are set. This allows
+      // helpers to do a check for `if (options.fn)`
+      if (program || inverse) {
+        if (!program) {
+          this.context.aliases.self = "this";
+          program = "self.noop";
+        }
+  
+        if (!inverse) {
+         this.context.aliases.self = "this";
+          inverse = "self.noop";
+        }
+  
+        options.push("inverse:" + inverse);
+        options.push("fn:" + program);
+      }
+  
+      for(var i=0; i<paramSize; i++) {
+        param = this.popStack();
+        params.push(param);
+  
+        if(this.options.stringParams) {
+          types.push(this.popStack());
+          contexts.push(this.popStack());
+        }
+      }
+  
+      if (this.options.stringParams) {
+        options.push("contexts:[" + contexts.join(",") + "]");
+        options.push("types:[" + types.join(",") + "]");
+        options.push("hashContexts:hashContexts");
+        options.push("hashTypes:hashTypes");
+      }
+  
+      if(this.options.data) {
+        options.push("data:data");
+      }
+  
+      options = "{" + options.join(",") + "}";
+      if (useRegister) {
+        this.register('options', options);
+        params.push('options');
+      } else {
+        params.push(options);
+      }
+      return params.join(", ");
+    }
+  };
+  
+  var reservedWords = (
+    "break else new var" +
+    " case finally return void" +
+    " catch for switch while" +
+    " continue function this with" +
+    " default if throw" +
+    " delete in try" +
+    " do instanceof typeof" +
+    " abstract enum int short" +
+    " boolean export interface static" +
+    " byte extends long super" +
+    " char final native synchronized" +
+    " class float package throws" +
+    " const goto private transient" +
+    " debugger implements protected volatile" +
+    " double import public let yield"
+  ).split(" ");
+  
+  var compilerWords = JavaScriptCompiler.RESERVED_WORDS = {};
+  
+  for(var i=0, l=reservedWords.length; i<l; i++) {
+    compilerWords[reservedWords[i]] = true;
+  }
+  
+  JavaScriptCompiler.isValidJavaScriptVariableName = function(name) {
+    if(!JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]+$/.test(name)) {
+      return true;
+    }
+    return false;
+  };
+  
+  Handlebars.precompile = function(input, options) {
+    if (input == null || (typeof input !== 'string' && input.constructor !== Handlebars.AST.ProgramNode)) {
+      throw new Handlebars.Exception("You must pass a string or Handlebars AST to Handlebars.precompile. You passed " + input);
+    }
+  
+    options = options || {};
+    if (!('data' in options)) {
+      options.data = true;
+    }
+    var ast = Handlebars.parse(input);
+    var environment = new Compiler().compile(ast, options);
+    return new JavaScriptCompiler().compile(environment, options);
+  };
+  
+  Handlebars.compile = function(input, options) {
+    if (input == null || (typeof input !== 'string' && input.constructor !== Handlebars.AST.ProgramNode)) {
+      throw new Handlebars.Exception("You must pass a string or Handlebars AST to Handlebars.compile. You passed " + input);
+    }
+  
+    options = options || {};
+    if (!('data' in options)) {
+      options.data = true;
+    }
+    var compiled;
+    function compile() {
+      var ast = Handlebars.parse(input);
+      var environment = new Compiler().compile(ast, options);
+      var templateSpec = new JavaScriptCompiler().compile(environment, options, undefined, true);
+      return Handlebars.template(templateSpec);
+    }
+  
+    // Template is only compiled on first use and cached after that point.
+    return function(context, options) {
+      if (!compiled) {
+        compiled = compile();
+      }
+      return compiled.call(this, context, options);
+    };
+  };
+  
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  
+  };
+  
+  
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/base.js', function (require, exports, module) { 
+  var handlebars = require('node_modules/handlebars/lib/handlebars/compiler/parser.js');
+  
+  exports.attach = function(Handlebars) {
+  
+  // BEGIN(BROWSER)
+  
+  Handlebars.Parser = handlebars;
+  
+  Handlebars.parse = function(input) {
+  
+    // Just return if an already-compile AST was passed in.
+    if(input.constructor === Handlebars.AST.ProgramNode) { return input; }
+  
+    Handlebars.Parser.yy = Handlebars.AST;
+    return Handlebars.Parser.parse(input);
+  };
+  
+  // END(BROWSER)
+  
+  return Handlebars;
+  };
+  
+
+});
+__tetanize_define('node_modules/handlebars/lib/handlebars/compiler/parser.js', function (require, exports, module) { 
+  // BEGIN(BROWSER)
+  /* Jison generated parser */
+  var handlebars = (function(){
+  var parser = {trace: function trace() { },
+  yy: {},
+  symbols_: {"error":2,"root":3,"program":4,"EOF":5,"simpleInverse":6,"statements":7,"statement":8,"openInverse":9,"closeBlock":10,"openBlock":11,"mustache":12,"partial":13,"CONTENT":14,"COMMENT":15,"OPEN_BLOCK":16,"inMustache":17,"CLOSE":18,"OPEN_INVERSE":19,"OPEN_ENDBLOCK":20,"path":21,"OPEN":22,"OPEN_UNESCAPED":23,"CLOSE_UNESCAPED":24,"OPEN_PARTIAL":25,"partialName":26,"params":27,"hash":28,"dataName":29,"param":30,"STRING":31,"INTEGER":32,"BOOLEAN":33,"hashSegments":34,"hashSegment":35,"ID":36,"EQUALS":37,"DATA":38,"pathSegments":39,"SEP":40,"$accept":0,"$end":1},
+  terminals_: {2:"error",5:"EOF",14:"CONTENT",15:"COMMENT",16:"OPEN_BLOCK",18:"CLOSE",19:"OPEN_INVERSE",20:"OPEN_ENDBLOCK",22:"OPEN",23:"OPEN_UNESCAPED",24:"CLOSE_UNESCAPED",25:"OPEN_PARTIAL",31:"STRING",32:"INTEGER",33:"BOOLEAN",36:"ID",37:"EQUALS",38:"DATA",40:"SEP"},
+  productions_: [0,[3,2],[4,2],[4,3],[4,2],[4,1],[4,1],[4,0],[7,1],[7,2],[8,3],[8,3],[8,1],[8,1],[8,1],[8,1],[11,3],[9,3],[10,3],[12,3],[12,3],[13,3],[13,4],[6,2],[17,3],[17,2],[17,2],[17,1],[17,1],[27,2],[27,1],[30,1],[30,1],[30,1],[30,1],[30,1],[28,1],[34,2],[34,1],[35,3],[35,3],[35,3],[35,3],[35,3],[26,1],[26,1],[26,1],[29,2],[21,1],[39,3],[39,1]],
+  performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
+  
+  var $0 = $$.length - 1;
+  switch (yystate) {
+  case 1: return $$[$0-1]; 
+  break;
+  case 2: this.$ = new yy.ProgramNode([], $$[$0]); 
+  break;
+  case 3: this.$ = new yy.ProgramNode($$[$0-2], $$[$0]); 
+  break;
+  case 4: this.$ = new yy.ProgramNode($$[$0-1], []); 
+  break;
+  case 5: this.$ = new yy.ProgramNode($$[$0]); 
+  break;
+  case 6: this.$ = new yy.ProgramNode([], []); 
+  break;
+  case 7: this.$ = new yy.ProgramNode([]); 
+  break;
+  case 8: this.$ = [$$[$0]]; 
+  break;
+  case 9: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
+  break;
+  case 10: this.$ = new yy.BlockNode($$[$0-2], $$[$0-1].inverse, $$[$0-1], $$[$0]); 
+  break;
+  case 11: this.$ = new yy.BlockNode($$[$0-2], $$[$0-1], $$[$0-1].inverse, $$[$0]); 
+  break;
+  case 12: this.$ = $$[$0]; 
+  break;
+  case 13: this.$ = $$[$0]; 
+  break;
+  case 14: this.$ = new yy.ContentNode($$[$0]); 
+  break;
+  case 15: this.$ = new yy.CommentNode($$[$0]); 
+  break;
+  case 16: this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1]); 
+  break;
+  case 17: this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1]); 
+  break;
+  case 18: this.$ = $$[$0-1]; 
+  break;
+  case 19:
+      // Parsing out the '&' escape token at this level saves ~500 bytes after min due to the removal of one parser node.
+      this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], $$[$0-2][2] === '&');
+    
+  break;
+  case 20: this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], true); 
+  break;
+  case 21: this.$ = new yy.PartialNode($$[$0-1]); 
+  break;
+  case 22: this.$ = new yy.PartialNode($$[$0-2], $$[$0-1]); 
+  break;
+  case 23: 
+  break;
+  case 24: this.$ = [[$$[$0-2]].concat($$[$0-1]), $$[$0]]; 
+  break;
+  case 25: this.$ = [[$$[$0-1]].concat($$[$0]), null]; 
+  break;
+  case 26: this.$ = [[$$[$0-1]], $$[$0]]; 
+  break;
+  case 27: this.$ = [[$$[$0]], null]; 
+  break;
+  case 28: this.$ = [[$$[$0]], null]; 
+  break;
+  case 29: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
+  break;
+  case 30: this.$ = [$$[$0]]; 
+  break;
+  case 31: this.$ = $$[$0]; 
+  break;
+  case 32: this.$ = new yy.StringNode($$[$0]); 
+  break;
+  case 33: this.$ = new yy.IntegerNode($$[$0]); 
+  break;
+  case 34: this.$ = new yy.BooleanNode($$[$0]); 
+  break;
+  case 35: this.$ = $$[$0]; 
+  break;
+  case 36: this.$ = new yy.HashNode($$[$0]); 
+  break;
+  case 37: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
+  break;
+  case 38: this.$ = [$$[$0]]; 
+  break;
+  case 39: this.$ = [$$[$0-2], $$[$0]]; 
+  break;
+  case 40: this.$ = [$$[$0-2], new yy.StringNode($$[$0])]; 
+  break;
+  case 41: this.$ = [$$[$0-2], new yy.IntegerNode($$[$0])]; 
+  break;
+  case 42: this.$ = [$$[$0-2], new yy.BooleanNode($$[$0])]; 
+  break;
+  case 43: this.$ = [$$[$0-2], $$[$0]]; 
+  break;
+  case 44: this.$ = new yy.PartialNameNode($$[$0]); 
+  break;
+  case 45: this.$ = new yy.PartialNameNode(new yy.StringNode($$[$0])); 
+  break;
+  case 46: this.$ = new yy.PartialNameNode(new yy.IntegerNode($$[$0])); 
+  break;
+  case 47: this.$ = new yy.DataNode($$[$0]); 
+  break;
+  case 48: this.$ = new yy.IdNode($$[$0]); 
+  break;
+  case 49: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2]; 
+  break;
+  case 50: this.$ = [{part: $$[$0]}]; 
+  break;
+  }
+  },
+  table: [{3:1,4:2,5:[2,7],6:3,7:4,8:6,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,5],22:[1,14],23:[1,15],25:[1,16]},{1:[3]},{5:[1,17]},{5:[2,6],7:18,8:6,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,19],20:[2,6],22:[1,14],23:[1,15],25:[1,16]},{5:[2,5],6:20,8:21,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,5],20:[2,5],22:[1,14],23:[1,15],25:[1,16]},{17:23,18:[1,22],21:24,29:25,36:[1,28],38:[1,27],39:26},{5:[2,8],14:[2,8],15:[2,8],16:[2,8],19:[2,8],20:[2,8],22:[2,8],23:[2,8],25:[2,8]},{4:29,6:3,7:4,8:6,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,5],20:[2,7],22:[1,14],23:[1,15],25:[1,16]},{4:30,6:3,7:4,8:6,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,5],20:[2,7],22:[1,14],23:[1,15],25:[1,16]},{5:[2,12],14:[2,12],15:[2,12],16:[2,12],19:[2,12],20:[2,12],22:[2,12],23:[2,12],25:[2,12]},{5:[2,13],14:[2,13],15:[2,13],16:[2,13],19:[2,13],20:[2,13],22:[2,13],23:[2,13],25:[2,13]},{5:[2,14],14:[2,14],15:[2,14],16:[2,14],19:[2,14],20:[2,14],22:[2,14],23:[2,14],25:[2,14]},{5:[2,15],14:[2,15],15:[2,15],16:[2,15],19:[2,15],20:[2,15],22:[2,15],23:[2,15],25:[2,15]},{17:31,21:24,29:25,36:[1,28],38:[1,27],39:26},{17:32,21:24,29:25,36:[1,28],38:[1,27],39:26},{17:33,21:24,29:25,36:[1,28],38:[1,27],39:26},{21:35,26:34,31:[1,36],32:[1,37],36:[1,28],39:26},{1:[2,1]},{5:[2,2],8:21,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,19],20:[2,2],22:[1,14],23:[1,15],25:[1,16]},{17:23,21:24,29:25,36:[1,28],38:[1,27],39:26},{5:[2,4],7:38,8:6,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,19],20:[2,4],22:[1,14],23:[1,15],25:[1,16]},{5:[2,9],14:[2,9],15:[2,9],16:[2,9],19:[2,9],20:[2,9],22:[2,9],23:[2,9],25:[2,9]},{5:[2,23],14:[2,23],15:[2,23],16:[2,23],19:[2,23],20:[2,23],22:[2,23],23:[2,23],25:[2,23]},{18:[1,39]},{18:[2,27],21:44,24:[2,27],27:40,28:41,29:48,30:42,31:[1,45],32:[1,46],33:[1,47],34:43,35:49,36:[1,50],38:[1,27],39:26},{18:[2,28],24:[2,28]},{18:[2,48],24:[2,48],31:[2,48],32:[2,48],33:[2,48],36:[2,48],38:[2,48],40:[1,51]},{21:52,36:[1,28],39:26},{18:[2,50],24:[2,50],31:[2,50],32:[2,50],33:[2,50],36:[2,50],38:[2,50],40:[2,50]},{10:53,20:[1,54]},{10:55,20:[1,54]},{18:[1,56]},{18:[1,57]},{24:[1,58]},{18:[1,59],21:60,36:[1,28],39:26},{18:[2,44],36:[2,44]},{18:[2,45],36:[2,45]},{18:[2,46],36:[2,46]},{5:[2,3],8:21,9:7,11:8,12:9,13:10,14:[1,11],15:[1,12],16:[1,13],19:[1,19],20:[2,3],22:[1,14],23:[1,15],25:[1,16]},{14:[2,17],15:[2,17],16:[2,17],19:[2,17],20:[2,17],22:[2,17],23:[2,17],25:[2,17]},{18:[2,25],21:44,24:[2,25],28:61,29:48,30:62,31:[1,45],32:[1,46],33:[1,47],34:43,35:49,36:[1,50],38:[1,27],39:26},{18:[2,26],24:[2,26]},{18:[2,30],24:[2,30],31:[2,30],32:[2,30],33:[2,30],36:[2,30],38:[2,30]},{18:[2,36],24:[2,36],35:63,36:[1,64]},{18:[2,31],24:[2,31],31:[2,31],32:[2,31],33:[2,31],36:[2,31],38:[2,31]},{18:[2,32],24:[2,32],31:[2,32],32:[2,32],33:[2,32],36:[2,32],38:[2,32]},{18:[2,33],24:[2,33],31:[2,33],32:[2,33],33:[2,33],36:[2,33],38:[2,33]},{18:[2,34],24:[2,34],31:[2,34],32:[2,34],33:[2,34],36:[2,34],38:[2,34]},{18:[2,35],24:[2,35],31:[2,35],32:[2,35],33:[2,35],36:[2,35],38:[2,35]},{18:[2,38],24:[2,38],36:[2,38]},{18:[2,50],24:[2,50],31:[2,50],32:[2,50],33:[2,50],36:[2,50],37:[1,65],38:[2,50],40:[2,50]},{36:[1,66]},{18:[2,47],24:[2,47],31:[2,47],32:[2,47],33:[2,47],36:[2,47],38:[2,47]},{5:[2,10],14:[2,10],15:[2,10],16:[2,10],19:[2,10],20:[2,10],22:[2,10],23:[2,10],25:[2,10]},{21:67,36:[1,28],39:26},{5:[2,11],14:[2,11],15:[2,11],16:[2,11],19:[2,11],20:[2,11],22:[2,11],23:[2,11],25:[2,11]},{14:[2,16],15:[2,16],16:[2,16],19:[2,16],20:[2,16],22:[2,16],23:[2,16],25:[2,16]},{5:[2,19],14:[2,19],15:[2,19],16:[2,19],19:[2,19],20:[2,19],22:[2,19],23:[2,19],25:[2,19]},{5:[2,20],14:[2,20],15:[2,20],16:[2,20],19:[2,20],20:[2,20],22:[2,20],23:[2,20],25:[2,20]},{5:[2,21],14:[2,21],15:[2,21],16:[2,21],19:[2,21],20:[2,21],22:[2,21],23:[2,21],25:[2,21]},{18:[1,68]},{18:[2,24],24:[2,24]},{18:[2,29],24:[2,29],31:[2,29],32:[2,29],33:[2,29],36:[2,29],38:[2,29]},{18:[2,37],24:[2,37],36:[2,37]},{37:[1,65]},{21:69,29:73,31:[1,70],32:[1,71],33:[1,72],36:[1,28],38:[1,27],39:26},{18:[2,49],24:[2,49],31:[2,49],32:[2,49],33:[2,49],36:[2,49],38:[2,49],40:[2,49]},{18:[1,74]},{5:[2,22],14:[2,22],15:[2,22],16:[2,22],19:[2,22],20:[2,22],22:[2,22],23:[2,22],25:[2,22]},{18:[2,39],24:[2,39],36:[2,39]},{18:[2,40],24:[2,40],36:[2,40]},{18:[2,41],24:[2,41],36:[2,41]},{18:[2,42],24:[2,42],36:[2,42]},{18:[2,43],24:[2,43],36:[2,43]},{5:[2,18],14:[2,18],15:[2,18],16:[2,18],19:[2,18],20:[2,18],22:[2,18],23:[2,18],25:[2,18]}],
+  defaultActions: {17:[2,1]},
+  parseError: function parseError(str, hash) {
+      throw new Error(str);
+  },
+  parse: function parse(input) {
+      var self = this, stack = [0], vstack = [null], lstack = [], table = this.table, yytext = "", yylineno = 0, yyleng = 0, recovering = 0, TERROR = 2, EOF = 1;
+      this.lexer.setInput(input);
+      this.lexer.yy = this.yy;
+      this.yy.lexer = this.lexer;
+      this.yy.parser = this;
+      if (typeof this.lexer.yylloc == "undefined")
+          this.lexer.yylloc = {};
+      var yyloc = this.lexer.yylloc;
+      lstack.push(yyloc);
+      var ranges = this.lexer.options && this.lexer.options.ranges;
+      if (typeof this.yy.parseError === "function")
+          this.parseError = this.yy.parseError;
+      function popStack(n) {
+          stack.length = stack.length - 2 * n;
+          vstack.length = vstack.length - n;
+          lstack.length = lstack.length - n;
+      }
+      function lex() {
+          var token;
+          token = self.lexer.lex() || 1;
+          if (typeof token !== "number") {
+              token = self.symbols_[token] || token;
+          }
+          return token;
+      }
+      var symbol, preErrorSymbol, state, action, a, r, yyval = {}, p, len, newState, expected;
+      while (true) {
+          state = stack[stack.length - 1];
+          if (this.defaultActions[state]) {
+              action = this.defaultActions[state];
+          } else {
+              if (symbol === null || typeof symbol == "undefined") {
+                  symbol = lex();
+              }
+              action = table[state] && table[state][symbol];
+          }
+          if (typeof action === "undefined" || !action.length || !action[0]) {
+              var errStr = "";
+              if (!recovering) {
+                  expected = [];
+                  for (p in table[state])
+                      if (this.terminals_[p] && p > 2) {
+                          expected.push("'" + this.terminals_[p] + "'");
+                      }
+                  if (this.lexer.showPosition) {
+                      errStr = "Parse error on line " + (yylineno + 1) + ":\n" + this.lexer.showPosition() + "\nExpecting " + expected.join(", ") + ", got '" + (this.terminals_[symbol] || symbol) + "'";
+                  } else {
+                      errStr = "Parse error on line " + (yylineno + 1) + ": Unexpected " + (symbol == 1?"end of input":"'" + (this.terminals_[symbol] || symbol) + "'");
+                  }
+                  this.parseError(errStr, {text: this.lexer.match, token: this.terminals_[symbol] || symbol, line: this.lexer.yylineno, loc: yyloc, expected: expected});
+              }
+          }
+          if (action[0] instanceof Array && action.length > 1) {
+              throw new Error("Parse Error: multiple actions possible at state: " + state + ", token: " + symbol);
+          }
+          switch (action[0]) {
+          case 1:
+              stack.push(symbol);
+              vstack.push(this.lexer.yytext);
+              lstack.push(this.lexer.yylloc);
+              stack.push(action[1]);
+              symbol = null;
+              if (!preErrorSymbol) {
+                  yyleng = this.lexer.yyleng;
+                  yytext = this.lexer.yytext;
+                  yylineno = this.lexer.yylineno;
+                  yyloc = this.lexer.yylloc;
+                  if (recovering > 0)
+                      recovering--;
+              } else {
+                  symbol = preErrorSymbol;
+                  preErrorSymbol = null;
+              }
+              break;
+          case 2:
+              len = this.productions_[action[1]][1];
+              yyval.$ = vstack[vstack.length - len];
+              yyval._$ = {first_line: lstack[lstack.length - (len || 1)].first_line, last_line: lstack[lstack.length - 1].last_line, first_column: lstack[lstack.length - (len || 1)].first_column, last_column: lstack[lstack.length - 1].last_column};
+              if (ranges) {
+                  yyval._$.range = [lstack[lstack.length - (len || 1)].range[0], lstack[lstack.length - 1].range[1]];
+              }
+              r = this.performAction.call(yyval, yytext, yyleng, yylineno, this.yy, action[1], vstack, lstack);
+              if (typeof r !== "undefined") {
+                  return r;
+              }
+              if (len) {
+                  stack = stack.slice(0, -1 * len * 2);
+                  vstack = vstack.slice(0, -1 * len);
+                  lstack = lstack.slice(0, -1 * len);
+              }
+              stack.push(this.productions_[action[1]][0]);
+              vstack.push(yyval.$);
+              lstack.push(yyval._$);
+              newState = table[stack[stack.length - 2]][stack[stack.length - 1]];
+              stack.push(newState);
+              break;
+          case 3:
+              return true;
+          }
+      }
+      return true;
+  }
+  };
+  /* Jison generated lexer */
+  var lexer = (function(){
+  var lexer = ({EOF:1,
+  parseError:function parseError(str, hash) {
+          if (this.yy.parser) {
+              this.yy.parser.parseError(str, hash);
+          } else {
+              throw new Error(str);
+          }
+      },
+  setInput:function (input) {
+          this._input = input;
+          this._more = this._less = this.done = false;
+          this.yylineno = this.yyleng = 0;
+          this.yytext = this.matched = this.match = '';
+          this.conditionStack = ['INITIAL'];
+          this.yylloc = {first_line:1,first_column:0,last_line:1,last_column:0};
+          if (this.options.ranges) this.yylloc.range = [0,0];
+          this.offset = 0;
+          return this;
+      },
+  input:function () {
+          var ch = this._input[0];
+          this.yytext += ch;
+          this.yyleng++;
+          this.offset++;
+          this.match += ch;
+          this.matched += ch;
+          var lines = ch.match(/(?:\r\n?|\n).*/g);
+          if (lines) {
+              this.yylineno++;
+              this.yylloc.last_line++;
+          } else {
+              this.yylloc.last_column++;
+          }
+          if (this.options.ranges) this.yylloc.range[1]++;
+  
+          this._input = this._input.slice(1);
+          return ch;
+      },
+  unput:function (ch) {
+          var len = ch.length;
+          var lines = ch.split(/(?:\r\n?|\n)/g);
+  
+          this._input = ch + this._input;
+          this.yytext = this.yytext.substr(0, this.yytext.length-len-1);
+          //this.yyleng -= len;
+          this.offset -= len;
+          var oldLines = this.match.split(/(?:\r\n?|\n)/g);
+          this.match = this.match.substr(0, this.match.length-1);
+          this.matched = this.matched.substr(0, this.matched.length-1);
+  
+          if (lines.length-1) this.yylineno -= lines.length-1;
+          var r = this.yylloc.range;
+  
+          this.yylloc = {first_line: this.yylloc.first_line,
+            last_line: this.yylineno+1,
+            first_column: this.yylloc.first_column,
+            last_column: lines ?
+                (lines.length === oldLines.length ? this.yylloc.first_column : 0) + oldLines[oldLines.length - lines.length].length - lines[0].length:
+                this.yylloc.first_column - len
+            };
+  
+          if (this.options.ranges) {
+              this.yylloc.range = [r[0], r[0] + this.yyleng - len];
+          }
+          return this;
+      },
+  more:function () {
+          this._more = true;
+          return this;
+      },
+  less:function (n) {
+          this.unput(this.match.slice(n));
+      },
+  pastInput:function () {
+          var past = this.matched.substr(0, this.matched.length - this.match.length);
+          return (past.length > 20 ? '...':'') + past.substr(-20).replace(/\n/g, "");
+      },
+  upcomingInput:function () {
+          var next = this.match;
+          if (next.length < 20) {
+              next += this._input.substr(0, 20-next.length);
+          }
+          return (next.substr(0,20)+(next.length > 20 ? '...':'')).replace(/\n/g, "");
+      },
+  showPosition:function () {
+          var pre = this.pastInput();
+          var c = new Array(pre.length + 1).join("-");
+          return pre + this.upcomingInput() + "\n" + c+"^";
+      },
+  next:function () {
+          if (this.done) {
+              return this.EOF;
+          }
+          if (!this._input) this.done = true;
+  
+          var token,
+              match,
+              tempMatch,
+              index,
+              col,
+              lines;
+          if (!this._more) {
+              this.yytext = '';
+              this.match = '';
+          }
+          var rules = this._currentRules();
+          for (var i=0;i < rules.length; i++) {
+              tempMatch = this._input.match(this.rules[rules[i]]);
+              if (tempMatch && (!match || tempMatch[0].length > match[0].length)) {
+                  match = tempMatch;
+                  index = i;
+                  if (!this.options.flex) break;
+              }
+          }
+          if (match) {
+              lines = match[0].match(/(?:\r\n?|\n).*/g);
+              if (lines) this.yylineno += lines.length;
+              this.yylloc = {first_line: this.yylloc.last_line,
+                             last_line: this.yylineno+1,
+                             first_column: this.yylloc.last_column,
+                             last_column: lines ? lines[lines.length-1].length-lines[lines.length-1].match(/\r?\n?/)[0].length : this.yylloc.last_column + match[0].length};
+              this.yytext += match[0];
+              this.match += match[0];
+              this.matches = match;
+              this.yyleng = this.yytext.length;
+              if (this.options.ranges) {
+                  this.yylloc.range = [this.offset, this.offset += this.yyleng];
+              }
+              this._more = false;
+              this._input = this._input.slice(match[0].length);
+              this.matched += match[0];
+              token = this.performAction.call(this, this.yy, this, rules[index],this.conditionStack[this.conditionStack.length-1]);
+              if (this.done && this._input) this.done = false;
+              if (token) return token;
+              else return;
+          }
+          if (this._input === "") {
+              return this.EOF;
+          } else {
+              return this.parseError('Lexical error on line '+(this.yylineno+1)+'. Unrecognized text.\n'+this.showPosition(),
+                      {text: "", token: null, line: this.yylineno});
+          }
+      },
+  lex:function lex() {
+          var r = this.next();
+          if (typeof r !== 'undefined') {
+              return r;
+          } else {
+              return this.lex();
+          }
+      },
+  begin:function begin(condition) {
+          this.conditionStack.push(condition);
+      },
+  popState:function popState() {
+          return this.conditionStack.pop();
+      },
+  _currentRules:function _currentRules() {
+          return this.conditions[this.conditionStack[this.conditionStack.length-1]].rules;
+      },
+  topState:function () {
+          return this.conditionStack[this.conditionStack.length-2];
+      },
+  pushState:function begin(condition) {
+          this.begin(condition);
+      }});
+  lexer.options = {};
+  lexer.performAction = function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {
+  
+  var YYSTATE=YY_START
+  switch($avoiding_name_collisions) {
+  case 0: yy_.yytext = "\\"; return 14; 
+  break;
+  case 1:
+                                     if(yy_.yytext.slice(-1) !== "\\") this.begin("mu");
+                                     if(yy_.yytext.slice(-1) === "\\") yy_.yytext = yy_.yytext.substr(0,yy_.yyleng-1), this.begin("emu");
+                                     if(yy_.yytext) return 14;
+                                   
+  break;
+  case 2: return 14; 
+  break;
+  case 3:
+                                     if(yy_.yytext.slice(-1) !== "\\") this.popState();
+                                     if(yy_.yytext.slice(-1) === "\\") yy_.yytext = yy_.yytext.substr(0,yy_.yyleng-1);
+                                     return 14;
+                                   
+  break;
+  case 4: yy_.yytext = yy_.yytext.substr(0, yy_.yyleng-4); this.popState(); return 15; 
+  break;
+  case 5: return 25; 
+  break;
+  case 6: return 16; 
+  break;
+  case 7: return 20; 
+  break;
+  case 8: return 19; 
+  break;
+  case 9: return 19; 
+  break;
+  case 10: return 23; 
+  break;
+  case 11: return 22; 
+  break;
+  case 12: this.popState(); this.begin('com'); 
+  break;
+  case 13: yy_.yytext = yy_.yytext.substr(3,yy_.yyleng-5); this.popState(); return 15; 
+  break;
+  case 14: return 22; 
+  break;
+  case 15: return 37; 
+  break;
+  case 16: return 36; 
+  break;
+  case 17: return 36; 
+  break;
+  case 18: return 40; 
+  break;
+  case 19: /*ignore whitespace*/ 
+  break;
+  case 20: this.popState(); return 24; 
+  break;
+  case 21: this.popState(); return 18; 
+  break;
+  case 22: yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2).replace(/\\"/g,'"'); return 31; 
+  break;
+  case 23: yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2).replace(/\\'/g,"'"); return 31; 
+  break;
+  case 24: return 38; 
+  break;
+  case 25: return 33; 
+  break;
+  case 26: return 33; 
+  break;
+  case 27: return 32; 
+  break;
+  case 28: return 36; 
+  break;
+  case 29: yy_.yytext = yy_.yytext.substr(1, yy_.yyleng-2); return 36; 
+  break;
+  case 30: return 'INVALID'; 
+  break;
+  case 31: return 5; 
+  break;
+  }
+  };
+  lexer.rules = [/^(?:\\\\(?=(\{\{)))/,/^(?:[^\x00]*?(?=(\{\{)))/,/^(?:[^\x00]+)/,/^(?:[^\x00]{2,}?(?=(\{\{|$)))/,/^(?:[\s\S]*?--\}\})/,/^(?:\{\{>)/,/^(?:\{\{#)/,/^(?:\{\{\/)/,/^(?:\{\{\^)/,/^(?:\{\{\s*else\b)/,/^(?:\{\{\{)/,/^(?:\{\{&)/,/^(?:\{\{!--)/,/^(?:\{\{![\s\S]*?\}\})/,/^(?:\{\{)/,/^(?:=)/,/^(?:\.(?=[}\/ ]))/,/^(?:\.\.)/,/^(?:[\/.])/,/^(?:\s+)/,/^(?:\}\}\})/,/^(?:\}\})/,/^(?:"(\\["]|[^"])*")/,/^(?:'(\\[']|[^'])*')/,/^(?:@)/,/^(?:true(?=[}\s]))/,/^(?:false(?=[}\s]))/,/^(?:-?[0-9]+(?=[}\s]))/,/^(?:[^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=[=}\s\/.]))/,/^(?:\[[^\]]*\])/,/^(?:.)/,/^(?:$)/];
+  lexer.conditions = {"mu":{"rules":[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],"inclusive":false},"emu":{"rules":[3],"inclusive":false},"com":{"rules":[4],"inclusive":false},"INITIAL":{"rules":[0,1,2,31],"inclusive":true}};
+  return lexer;})()
+  parser.lexer = lexer;
+  function Parser () { this.yy = {}; }Parser.prototype = parser;parser.Parser = Parser;
+  return new Parser;
+  })();
+  // END(BROWSER)
+  
+  module.exports = handlebars;
   
 
 });
