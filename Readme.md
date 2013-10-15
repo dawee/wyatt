@@ -29,15 +29,30 @@ Write in __Resources/index.yat__ :
 }
 ```
 
-Write in __Resources/app.js__
+Write in __Resources/app.js__ :
 
 ```javascript
 var wyatt = require('tipis/wyatt');
 
+// Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
-
+// Finds and open the window
 yat.first({type: "Window"}).open();
 ```
+
+## YAT File Format
+
+Special attributes are prefixed with __@__.
+These special attributes are not passed to the UI constructors.
+
+__@type__ : The type name of the UI :
+
+*   __View__ : [Ti.UI.View](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.View)
+*   __Window__ : [Ti.UI.Window](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Window)
+*   __Button__ : [Ti.UI.Button](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Button)
+*   __Label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
+
+__@children__ : The list of UIs to add into the current UI
 
 ## License 
 
