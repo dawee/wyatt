@@ -1,7 +1,7 @@
 # Wyatt
 
   __Wyatt__ is a template engine for Titanium.
-  It's based on JSON and Moustache (Handlebars.js). 
+  It's based on __{JSON}__ and __{{mustache}}__ (Handlebars.js). 
 
 ## Installation
 
