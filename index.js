@@ -32,3 +32,5 @@ wyatt.register = function (type, element) {
 wyatt.register('Window', require('./lib/WindowElement'));
 wyatt.register('Label', require('./lib/LabelElement'));
 wyatt.register('View', require('./lib/ViewElement'));
+wyatt.register('Button', require('./lib/ButtonElement'));
+wyatt.register('Image', require('./lib/ImageElement'));

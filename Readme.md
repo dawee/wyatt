@@ -52,6 +52,7 @@ __@type__ : The type name of the UI :
 *   __Window__ : [Ti.UI.Window](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Window)
 *   __Button__ : [Ti.UI.Button](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Button)
 *   __Label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
+*   __Image__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.ImageView)
 
 __@children__ : The list of UIs to add into the current UI
 
