@@ -20,6 +20,11 @@
   "dependencies": {
     "extendable": "0.0.6",
     "json3": "~3.2.5",
-    "handlebars": "~1.0.12"
+    "handlebars": "~1.0.12",
+    "titanium-namespace": "0.0.2"
+  },
+  "devDependencies": {
+    "tetanize": "0.0.6",
+    "expresso": "~0.9.2"
   }
 }

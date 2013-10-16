@@ -1,3 +1,4 @@
+//var Titanium = require('titanium-namespace');
 var Handlebars = require('handlebars');
 var JSON3 = require('json3');
 var YatDocument = require('./lib/YatDocument');
