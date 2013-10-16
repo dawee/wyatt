@@ -19,6 +19,7 @@ Write in __Resources/index.yat__ :
   "@type": "Window",
 
   "fullscreen": true,
+  "backgroundColor": "white",
 
   "@children": [
     {
