@@ -4,6 +4,8 @@ __Wyatt__ is a template engine for Titanium. It's based on __{JSON}__ and __{{mu
 
 ## Installation
 
+With [tipi](https://github.com/IsCoolEntertainment/tipi) :
+
 ```bash
 $ tipi install wyatt
 ```
