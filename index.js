@@ -33,4 +33,5 @@ wyatt.register('window', require('./lib/WindowElement'));
 wyatt.register('label', require('./lib/LabelElement'));
 wyatt.register('view', require('./lib/ViewElement'));
 wyatt.register('button', require('./lib/ButtonElement'));
-wyatt.register('image', require('./lib/ImageElement'));
+wyatt.register('imageview', require('./lib/ImageElement'));
+wyatt.register('textfield', require('./lib/TextFieldElement'));

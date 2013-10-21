@@ -51,7 +51,8 @@ __element__ : The YAT element name :
 *   __window__ : [Ti.UI.Window](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Window)
 *   __button__ : [Ti.UI.Button](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Button)
 *   __label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
-*   __image__ : [Ti.UI.ImageView](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.ImageView)
+*   __imageview__ : [Ti.UI.ImageView](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.ImageView)
+*   __textfield__ : [Ti.UI.TextField](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.TextField)
 
 __options__ : The object to pass to the Titanium UI object.
 
