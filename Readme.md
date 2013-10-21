@@ -16,16 +16,17 @@ Write in __Resources/index.yat__ :
 
 ```javascript
 {
-  "@type": "Window",
-
-  "fullscreen": true,
-  "backgroundColor": "white",
-
-  "@children": [
+  "element": "window",
+  "options": {
+    "fullscreen": true,
+    "backgroundColor": "white"   
+  }
+  "tree": [
     {
-        "@type": "Label",
-        
-        "text": "{{message}}"
+      "element": "label",
+      "options": {
+        "text": "{{message}}"  
+      }
     }
   ]
 }
@@ -39,22 +40,22 @@ var wyatt = require('tipis/wyatt');
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 // Finds and open the window
-yat.first({type: "Window"}).open();
+yat.first({element: "window"}).open();
 ```
 
 ## YAT File Format
 
-Special keys are prefixed with __@__. Special keys are not passed to the UI constructors.
+__element__ : The YAT element name :
 
-__@type__ : The type name of the UI :
+*   __view__ : [Ti.UI.View](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.View)
+*   __window__ : [Ti.UI.Window](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Window)
+*   __button__ : [Ti.UI.Button](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Button)
+*   __label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
+*   __image__ : [Ti.UI.ImageView](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.ImageView)
 
-*   __View__ : [Ti.UI.View](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.View)
-*   __Window__ : [Ti.UI.Window](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Window)
-*   __Button__ : [Ti.UI.Button](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Button)
-*   __Label__ : [Ti.UI.Label](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.Label)
-*   __Image__ : [Ti.UI.ImageView](http://docs.appcelerator.com/titanium/3.0/#!/api/Titanium.UI.ImageView)
+__options__ : The object to pass to the Titanium UI object.
 
-__@children__ : The list of UIs to add into the current UI
+__tree__ : The list of elements to add into the current one
 
 ## YAT Queries
 
@@ -66,21 +67,23 @@ Retreive a list of all the elements that matched the query.
 
 A query is a JSON object. It's used to filter the elements who match every __name/value__ pair. 
 
-Only special keys can be used for the query. Users can add any custom special key such as __@id__ or __@class__.
+Users can add any custom special key.
 
 __query-example.yat__ :
 
 ```javascript
 {
-  "@type": "View",
+  "element": "view",
 
-  "@children": [
+  "tree": [
     {
       {{#persons}}
       {
-        "@type": "Label",
-        "@job": "{{job}}",
-        "text": "{{name}}"
+        "element": "label",
+        "job": "{{job}}",
+        "options": {
+          "text": "{{name}}"  
+        }
       }
       {{/persons}} 
     }
@@ -103,12 +106,10 @@ var yat = wyatt.render('query-example.yat', {
 });
 
 // Finds all the developers and change their color
-yat.all({type: "Label", job: "developer"}).forEach(function (el) {
+yat.all({element: "label", job: "developer"}).forEach(function (el) {
   el.set({color: 'red'});
 });
 ```
-
-
 
 ### yat.first(query)
 
