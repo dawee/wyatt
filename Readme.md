@@ -16,14 +16,14 @@ Write in __Resources/index.yat__ :
 
 ```javascript
 {
-  "element": "window",
+  "el": "window",
   "options": {
     "fullscreen": true,
     "backgroundColor": "white"   
   }
   "tree": [
     {
-      "element": "label",
+      "el": "label",
       "options": {
         "text": "{{message}}"  
       }
@@ -40,7 +40,7 @@ var wyatt = require('tipis/wyatt');
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 // Finds and open the window
-yat.first({element: "window"}).open();
+yat.first({el: "window"}).open();
 ```
 
 ## YAT File Format
@@ -74,13 +74,13 @@ __query-example.yat__ :
 
 ```javascript
 {
-  "element": "view",
+  "el": "view",
 
   "tree": [
     {
       {{#persons}}
       {
-        "element": "label",
+        "el": "label",
         "job": "{{job}}",
         "options": {
           "text": "{{name}}"  
@@ -107,14 +107,14 @@ var yat = wyatt.render('query-example.yat', {
 });
 
 // Finds all the developers and change their color
-yat.all({element: "label", job: "developer"}).forEach(function (el) {
+yat.all({el: "label", job: "developer"}).forEach(function (el) {
   el.set({color: 'red'});
 });
 ```
 
 ### yat.first(query)
 
-Same as __yat.all__ but returns only the first matched element.
+Same as __yat.all__ but returns only the first matched el.
 
 ## License 
 
