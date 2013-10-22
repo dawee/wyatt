@@ -2,17 +2,18 @@
 
 body {
   font-family: 'Volkhov', serif;
+  background-color: #FFFFFD;
 }
 
 #introduction {
   position: relative;
   width: 800px;
-  height: 600px;
-  top: 20%;
-  left: 30%;
+  height: 620px;
+  margin: 200px auto 50px auto;
   background-image: url(./wyatt-earp.png);
   background-repeat: no-repeat;
   background-size: auto 200px;
+  background-position: 0 0;
 
 }
 
@@ -34,4 +35,61 @@ body {
 
 .copyright {
     color: #968879;
+}
+
+#introduction .example {
+  position: absolute;
+  bottom: 0;
+  left: 200px;
+}
+
+#introduction code {
+  border: 1px dashed #54403F;
+}
+
+div#sidebar {
+  background: #fff;
+  position: fixed;
+  z-index: 10;
+  top: 0; left: 0; bottom: 0;
+  width: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 15px 0 30px 30px;
+  border-right: 1px solid #bbb;
+  box-shadow: 0 0 20px #ccc; -webkit-box-shadow: 0 0 20px #ccc; -moz-box-shadow: 0 0 20px #ccc;
+}
+
+a.toc_title, a.toc_title:visited {
+  display: block;
+  color: black;
+  font-weight: bold;
+  margin-top: 15px;
+}
+a.toc_title:hover {
+  text-decoration: underline;
+}
+#sidebar .version {
+  font-size: 10px;
+  font-weight: normal;
+}
+ul.toc_section {
+  font-size: 11px;
+  line-height: 14px;
+  margin: 5px 0 0 0;
+  padding-left: 0px;
+  list-style-type: none;
+  font-family: Lucida Grande;
+}
+.toc_section li {
+  cursor: pointer;
+  margin: 0 0 3px 0;
+}
+.toc_section li a {
+  text-decoration: none;
+  color: black;
+}
+.toc_section li a:hover {
+  text-decoration: underline;
 }

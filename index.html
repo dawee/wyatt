@@ -1,12 +1,77 @@
 <html>
   <head>
-    <title>{{ {wyatt} }}</title>
-    <link rel="stylesheet" type="text/css" href="./wyatt.css">
+    <title>Wyatt</title>
+    <link rel="stylesheet" type="text/css" href="./wyatt.css" />
+    <link rel="stylesheet" type="text/css" href="./github.css" />
+    <script type="text/javascript" src="./highlight.pack.js"></script>
   </head>
   <body>
     <div id="introduction">
         <h1>Wyatt</h1>
-        <h2>brings <span class="copyright">mustache</span> to your <span class="copyright">Titanium</span> application</h2>
+        <h2>brings his <span class="copyright">mustache</span> into your <span class="copyright">Titanium</span> application</h2>
+        <div class="example">
+          <pre><code class="json">
+{
+  "el": "window",
+  "options": {
+    "fullscreen": true,
+    "backgroundColor": "white"   
+  }
+  "tree": [
+    {
+      "el": "label",
+      "options": {
+        "text": "{{message}}"  
+      }
+    }
+  ]
+}
+          </code></pre>
+          <pre><code class="javascript">
+var wyatt = require('tipis/wyatt');
+
+// Generates the UI
+var yat = wyatt.render('index.yat', {message: 'Hello World !'})
+// Finds and open the window
+yat.first({el: "window"}).open();
+          </code></pre>
+        </div>
     </div>
+
+      <div id="sidebar">
+         <a class="toc_title" href="#">Wyatt <span class="version">(0.0.6)</span></a>
+        <ul class="toc_section">
+          <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
+        </ul>
+
+        <a class="toc_title" href="#">
+          Introduction
+        </a>
+        <a class="toc_title" href="#">
+          YAT Document
+        </a>
+        <a class="toc_title" href="#">
+          View Element
+        </a>
+        <a class="toc_title" href="#">
+          Window Element
+        </a>
+        <a class="toc_title" href="#">
+          Button Element
+        </a>
+        <a class="toc_title" href="#">
+          Label Element
+        </a>
+        <a class="toc_title" href="#">
+          Image Element
+        </a>
+        <a class="toc_title" href="#">
+          TextField Element
+        </a>
+      </div>
+
+    <script>
+       hljs.initHighlightingOnLoad();
+    </script>
   </body>
 </html>
