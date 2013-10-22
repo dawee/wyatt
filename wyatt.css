@@ -2,10 +2,14 @@
 
 body {
   font-family: 'Volkhov', serif;
+  color: #54403F;
 }
 
 #content {
   position: absolute;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding-left: 100px;
   background-color: #FFFFFD;
   left: 200px;
   top: 0;
@@ -13,46 +17,59 @@ body {
   bottom: 0;
 }
 
+#introduction-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#doc-wrapper {
+  position: absolute;
+}
+
 #introduction {
   position: absolute;
-  width: 800px;
-  height: 620px;
-  margin: 200px auto 50px 100px;
+  top: 200px;
+  height: 200px;
+  width: auto;
+  left: 50px;
   background-image: url(./wyatt-earp.png);
   background-repeat: no-repeat;
   background-size: auto 200px;
   background-position: 0 0;
-
 }
 
 #introduction h1 {
-    position: absolute;
-    top: 15px;
-    left: 200px;
-    font-size: 50px;
-    color: #54403F;
+  margin-top: 15px;
+  margin-left: 200px;
+  font-size: 50px;
+  color: #54403F;
 }
 
 #introduction h2 {
-    position: absolute;
-    top: 100px;
-    left: 200px;
-    font-size: 18px;
-    color: #54403F;
+  margin-left: 200px;
+  font-size: 18px;
+  color: #54403F;
+  white-space: nowrap;
 }
 
-.copyright {
-    color: #968879;
+.light {
+  color: #968879;
 }
 
-#introduction .example {
-  position: absolute;
-  bottom: 0;
-  left: 200px;
-}
-
-#introduction code {
+code {
   border: 1px dashed #54403F;
+  width: 500px;
+}
+
+#doc-wrapper h2 {
+  font-size: 25px;
+  margin: 50px 0 50px 0;
+}
+
+#doc-wrapper h3 {
+  font-size: 18px;
+  margin: 36px 0 36px 0;
 }
 
 #sidebar {

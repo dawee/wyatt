@@ -7,11 +7,17 @@
   </head>
   <body>
     <div id="content">
-      <div id="introduction">
-          <h1>Wyatt</h1>
-          <h2>brings his <span class="copyright">mustache</span> into your <span class="copyright">Titanium</span> application</h2>
-          <div class="example">
-            <pre><code class="json">
+      <div id="introduction-wrapper">
+        <div id="introduction">
+            <h1>Wyatt</h1>
+            <h2>brings <span class="light">mustache</span> into your <span class="light">Titanium</span> application</h2>
+        </div>
+      </div>
+      <div id="doc-wrapper">
+        <h2 id="getting-started">Getting Started</h2>
+        <h3>Write your <span class="light">index.yat</span> file</h3>
+        <div class="example">
+          <pre><code class="json">
 {
   "el": "window",
   "options": {
@@ -27,18 +33,21 @@
     }
   ]
 }
-            </code></pre>
-            <pre><code class="javascript">
+          </code></pre>
+
+          <h3>Then render it in your <span class="light">app.js</span> file</h3>
+
+          <pre><code class="javascript">
 var wyatt = require('tipis/wyatt');
 
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 // Finds and open the window
 yat.first({el: "window"}).open();
-            </code></pre>
-          </div>
+          </code></pre>
+        </div>        
       </div>
-      
+
     </div>
 
       <div id="sidebar">
