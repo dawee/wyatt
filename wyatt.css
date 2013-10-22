@@ -2,14 +2,22 @@
 
 body {
   font-family: 'Volkhov', serif;
+}
+
+#content {
+  position: absolute;
   background-color: #FFFFFD;
+  left: 200px;
+  top: 0;
+  right: 0;
+  bottom: 0;
 }
 
 #introduction {
-  position: relative;
+  position: absolute;
   width: 800px;
   height: 620px;
-  margin: 200px auto 50px auto;
+  margin: 200px auto 50px 100px;
   background-image: url(./wyatt-earp.png);
   background-repeat: no-repeat;
   background-size: auto 200px;
@@ -47,15 +55,15 @@ body {
   border: 1px dashed #54403F;
 }
 
-div#sidebar {
+#sidebar {
+  position: absolute;
   background: #fff;
-  position: fixed;
-  z-index: 10;
-  top: 0; left: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: 200px;
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding: 15px 0 30px 30px;
   border-right: 1px solid #bbb;
   box-shadow: 0 0 20px #ccc; -webkit-box-shadow: 0 0 20px #ccc; -moz-box-shadow: 0 0 20px #ccc;

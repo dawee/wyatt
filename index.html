@@ -6,36 +6,39 @@
     <script type="text/javascript" src="./highlight.pack.js"></script>
   </head>
   <body>
-    <div id="introduction">
-        <h1>Wyatt</h1>
-        <h2>brings his <span class="copyright">mustache</span> into your <span class="copyright">Titanium</span> application</h2>
-        <div class="example">
-          <pre><code class="json">
+    <div id="content">
+      <div id="introduction">
+          <h1>Wyatt</h1>
+          <h2>brings his <span class="copyright">mustache</span> into your <span class="copyright">Titanium</span> application</h2>
+          <div class="example">
+            <pre><code class="json">
 {
   "el": "window",
   "options": {
     "fullscreen": true,
     "backgroundColor": "white"   
-  }
+  },
   "tree": [
     {
       "el": "label",
       "options": {
-        "text": "{{message}}"  
+        "text": "{{message}}"
       }
     }
   ]
 }
-          </code></pre>
-          <pre><code class="javascript">
+            </code></pre>
+            <pre><code class="javascript">
 var wyatt = require('tipis/wyatt');
 
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 // Finds and open the window
 yat.first({el: "window"}).open();
-          </code></pre>
-        </div>
+            </code></pre>
+          </div>
+      </div>
+      
     </div>
 
       <div id="sidebar">
