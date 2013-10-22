@@ -1,6 +1,37 @@
+@import url(http://fonts.googleapis.com/css?family=Volkhov);
+
 body {
+  font-family: 'Volkhov', serif;
+}
+
+#introduction {
+  position: relative;
+  width: 800px;
+  height: 600px;
+  top: 20%;
+  left: 30%;
   background-image: url(./wyatt-earp.png);
   background-repeat: no-repeat;
-  background-position: 30% center;
-  background-size: 15% auto;
+  background-size: auto 200px;
+
+}
+
+#introduction h1 {
+    position: absolute;
+    top: 15px;
+    left: 200px;
+    font-size: 50px;
+    color: #54403F;
+}
+
+#introduction h2 {
+    position: absolute;
+    top: 100px;
+    left: 200px;
+    font-size: 18px;
+    color: #54403F;
+}
+
+.copyright {
+    color: #968879;
 }
