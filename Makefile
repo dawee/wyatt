@@ -8,3 +8,4 @@ dist: tests
 	@echo wyatt ${version}
 	@mkdir -p dist
 	@./node_modules/.bin/tetanize --out dist/wyatt-${version}.js
+	@./node_modules/.bin/uglifyjs dist/wyatt-${version}.js -o dist/wyatt-${version}-min.js
