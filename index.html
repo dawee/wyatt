@@ -48,17 +48,31 @@ yat.first({el: "window"}).open();
           </code></pre>
         </div>
  
+
         <h2 id="introduction">Introduction</h2>
         <p>Since Titanium helps us writing complex mobile applications in Javascript, the pain has always been to describe views. Alloy had to solve this problem with the brand new XML approach plus its TSS style definition. For me as for many other Titanium developers, it was quite something and I was prepared to migrate all my former code to Alloy.</p>
         <p>The Alloy concept has been a bit frustrating for me. I'm an anti-precompiler. I think precompiling is a fail in a compilation process. I couldn't stand it in C, I don't like CoffeeScript, so I wasn't happy to see that Alloy came with its precompilation system behind a big MVC machine.</p>
         <p class="warning">Wyatt is not meant to replace Alloy.</p>
         <p>In fact, the development pattern is completely different : Alloy is a framwork, Wyatt is a simple template&query engine, that's it. The rest of the application : your MVC choice if you want MVC, your libs, your db manager ... I won't code your application, you're the boss here.</p>
-      </div>
 
+
+        <h2>YAT Document</h2>
+        
+        <p>Wyatt read YAT Documents to render the UI tree.</p>
+        
+        <h3>Syntax</h3>
+        
+        <p>YAT syntax is basicaly JSON with some specials keys.</p>
+        <ul>
+          <li><span class="light">el :</span> the name of the element (e.g.: 'view', 'button', 'window' ...).</li>
+          <li><span class="light">options :</span> an object to pass at the UI factory (Ti.UI.createWhatever)</li>
+          <li><span class="light">tree :</span> the whole tree to append into the current UI</li>
+        </ul>
+      </div>
     </div>
 
       <div id="sidebar">
-         <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.6)</span></a>
+         <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.7)</span></a>
         <ul class="toc_section">
           <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
         </ul>
