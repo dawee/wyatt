@@ -94,7 +94,7 @@ yat.first({el: "window"}).open();
         <p>The keys in the filter can be "el" (to filter by element name) or anything defined in the YAT Document.</p>
         <p>Example :</p>
         <p><span class="light">query-example.yat</span> :</p>
-        <div class="example">
+        <p>Example :</p>
           <pre><code class="json">
 {
   "el": "view",
@@ -144,7 +144,7 @@ yat.any({el: "label", job: "developer"}).forEach(function (el) {
 
 
         <p><span class="light">subquery-example.yat</span> :</p>
-        <div class="example">
+        <p>Example :</p>
           <pre><code class="json">
 [
   {
@@ -204,6 +204,7 @@ var yat = wyatt.render('subquery-example.yat', {
 yat.first({id: "vegetables"}).any({el: "label"}).forEach(function (el) {
   el.attr('color': 'green');
 });
+          </code></pre>
 
       </div>
     </div>
