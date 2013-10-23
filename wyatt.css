@@ -176,3 +176,9 @@ ul.toc_section {
 }.download:active {
   bottom: 51px;
 }
+
+a, a:hover, a:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed #D13038;
+  color: #D13038;
+}
