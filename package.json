@@ -1,6 +1,6 @@
 {
   "name": "wyatt",
-  "version": "0.0.6-rc3",
+  "version": "0.0.7",
   "description": "Wyatt brings mustache to your titanium application",
   "main": "index.js",
   "repository": {
@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "extendable": "0.0.6",
-    "json3": "~3.2.5",
     "handlebars": "~1.0.12",
     "titanium-namespace": "0.0.2"
   },

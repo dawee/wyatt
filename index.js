@@ -1,6 +1,5 @@
 var Ti = require('titanium-namespace');
 var Handlebars = require('handlebars');
-var JSON3 = require('json3');
 var YatDocument = require('./lib/YatDocument');
 var wyatt = module.exports = exports = {};
 
@@ -21,7 +20,7 @@ wyatt.yat = function (template) {
 
 wyatt.render = function (path, ctx) {
   var template = wyatt.template(path)(ctx);
-  return wyatt.yat(JSON3.parse(template));
+  return wyatt.yat(JSON.parse(template));
 };
 
 wyatt.register = function (type, element) {
