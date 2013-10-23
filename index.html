@@ -9,9 +9,10 @@
     <div id="content">
       <div id="ban-wrapper">
         <div id="ban">
-            <h1>Wyatt</h1>
+            <h1 id="wyatt">Wyatt</h1>
             <h2>brings <span class="light">mustache</span> into your <span class="light">Titanium</span> application</h2>
         </div>
+        <a href="https://raw.github.com/dawicorti/wyatt/master/dist/wyatt-0.0.7.js"><div class="download">Download latest version (v0.0.7)</div></a>
       </div>
       <div id="doc-wrapper">
         <h2 id="getting-started">Getting Started</h2>
@@ -38,7 +39,7 @@
           <h3>Then render it in your <span class="light">app.js</span> file</h3>
 
           <pre><code class="javascript">
-var wyatt = require('tipis/wyatt');
+var wyatt = require('wyatt');
 
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
@@ -46,17 +47,18 @@ var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 yat.first({el: "window"}).open();
           </code></pre>
         </div>
+ 
         <h2 id="introduction">Introduction</h2>
         <p>Since Titanium help us writing complex mobile applications in Javascript, the pain has always been to describe views. Alloy had to answer this problem with the brand new XML approach plus its TSS style definition. For me as for many other Titanium developer, it was quite something and I was prepared to migrate all my precedent code to Alloy.</p>
         <p>The Alloy concept has been a bit frustrating for me. I'm a anti-precompiler. I think precompiling is a fail in a compilation process. I couldn't stand it in C, I don't like CoffeeScript, so I wasn't happy to see that Alloy came with its precompilation system behind a big MVC machine.</p>
-        <p class="light">Wyatt is not meant to replace Alloy.</p>
+        <p class="warning">Wyatt is not meant to replace Alloy.</p>
         <p>In fact, the development pattern is completely different : Alloy is framwork, Wyatt is a simple template&amp;query engine, that's it. The rest of the application : your MVC choice if you want MVC, your libs, your db manager ... I won't code your application, you're the boss here.</p>
       </div>
 
     </div>
 
       <div id="sidebar">
-         <a class="toc_title" href="#">Wyatt <span class="version">(0.0.6)</span></a>
+         <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.6)</span></a>
         <ul class="toc_section">
           <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
         </ul>
