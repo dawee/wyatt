@@ -7,8 +7,8 @@
   </head>
   <body>
     <div id="content">
-      <div id="introduction-wrapper">
-        <div id="introduction">
+      <div id="ban-wrapper">
+        <div id="ban">
             <h1>Wyatt</h1>
             <h2>brings <span class="light">mustache</span> into your <span class="light">Titanium</span> application</h2>
         </div>
@@ -45,7 +45,12 @@ var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 // Finds and open the window
 yat.first({el: "window"}).open();
           </code></pre>
-        </div>        
+        </div>
+        <h2 id="introduction">Introduction</h2>
+        <p>Since Titanium help us writing complex moble applications in Javascript, the pain has always been to describe views. Alloy had to answer this problem with the brand new XML approach plus its TSS style definition. As many other Titanium developer, it was quite something and I was prepared to enjoy it.</p>
+        <p>The Alloy concept has been a bit frustrating for me. I'm a anti-precompiler. I think precompiling is a fail in a compilation process. I couldn't stand it in C, I don't like CoffeeScript, so I wasn't happy to see that Alloy came with its precompilation system behind a big MVC machine.</p>
+        <p class="light">Wyatt is not meant to replace Alloy.</p>
+        <p>In fact, the development pattern is completely different : Alloy is framwork, Wyatt is a simple template&amp;query engine, that's it. The rest of the application : your MVC choice if you want MVC, your libs, your db manager ... I won't code your application, you're the boss here.</p>
       </div>
 
     </div>
@@ -56,30 +61,8 @@ yat.first({el: "window"}).open();
           <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
         </ul>
 
-        <a class="toc_title" href="#">
-          Introduction
-        </a>
-        <a class="toc_title" href="#">
-          YAT Document
-        </a>
-        <a class="toc_title" href="#">
-          View Element
-        </a>
-        <a class="toc_title" href="#">
-          Window Element
-        </a>
-        <a class="toc_title" href="#">
-          Button Element
-        </a>
-        <a class="toc_title" href="#">
-          Label Element
-        </a>
-        <a class="toc_title" href="#">
-          Image Element
-        </a>
-        <a class="toc_title" href="#">
-          TextField Element
-        </a>
+        <a class="toc_title" href="#getting-started">Getting Started</a>
+        <a class="toc_title" href="#introduction">Introduction</a>
       </div>
 
     <script>
