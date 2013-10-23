@@ -1,3 +1,4 @@
+@import url(https://raw.github.com/necolas/normalize.css/master/normalize.css);
 @import url(http://fonts.googleapis.com/css?family=Volkhov);
 
 body {
@@ -45,14 +46,14 @@ body {
 }
 
 #ban h1 {
-  margin-top: 15px;
-  margin-left: 200px;
+  margin: 60px 0 0 180px;
+  line-height: 40px;
   font-size: 50px;
   color: #54403F;
 }
 
 #ban h2 {
-  margin-left: 200px;
+  margin-left: 195px;
   font-size: 18px;
   color: #54403F;
   white-space: nowrap;
@@ -64,7 +65,7 @@ body {
 
 code {
   border: 1px dashed #54403F;
-  width: 500px;
+  width: 800px;
 }
 
 #doc-wrapper h2 {
