@@ -177,7 +177,7 @@ ul.toc_section {
   bottom: 51px;
 }
 
-a, a:hover, a:visited {
+#doc-wrapper a, #doc-wrapper a:hover, #doc-wrapper a:visited {
   text-decoration: none;
   border-bottom: 1px dashed #D13038;
   color: #D13038;
