@@ -58,7 +58,7 @@ yat.first({el: "window"}).open();
 
         <h2>YAT Document</h2>
         
-        <p>Wyatt read YAT Documents to render the UI tree.</p>
+        <p>Wyatt read YAT Documents to render the element tree.</p>
         
         <h3>Syntax</h3>
         
@@ -68,6 +68,19 @@ yat.first({el: "window"}).open();
           <li><span class="light">options :</span> an object to pass at the UI factory (Ti.UI.createWhatever)</li>
           <li><span class="light">tree :</span> the whole tree to append into the current UI</li>
         </ul>
+
+        <h3>Mustache basics</h3>
+        
+        <p>Mustache is the template processor used to generate the element tree from a given context.</p>
+        <p>The logic-less system is fast to process and very adapted for mobile development.</p>
+        <p>In a nutshell :</p>
+        <ul>
+          <li><span class="light">{{foobar}}</span> is replaced by the foobar value in the given context.</li>
+          <li><span class="light">{{#titans}} {{name}} {{/titans}}</span> iters into the titans array.</li>
+        </ul>
+        
+        <p>As the processor used is Handlebars (like was Wyatt Earp mustache), you can read more here : <a href="http://handlebarsjs.com/">handlebarsjs.com</a></p>
+
       </div>
     </div>
 
