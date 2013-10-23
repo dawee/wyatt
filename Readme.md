@@ -2,16 +2,6 @@
 
 __Wyatt__ is a template engine for Titanium. It's based on __{JSON}__ and __{{mustache}}__ (Handlebars.js). 
 
-## Installation
-
-With [tipi](https://github.com/IsCoolEntertainment/tipi) :
-
-```bash
-$ tipi install wyatt
-```
-
-## Getting started
-
 Write in __Resources/index.yat__ :
 
 ```javascript
@@ -35,7 +25,7 @@ Write in __Resources/index.yat__ :
 Write in __Resources/app.js__ :
 
 ```javascript
-var wyatt = require('tipis/wyatt');
+var wyatt = require('wyatt');
 
 // Generates the UI
 var yat = wyatt.render('index.yat', {message: 'Hello World !'})
