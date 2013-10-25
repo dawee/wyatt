@@ -12,7 +12,7 @@
             <h1 id="wyatt">Wyatt</h1>
             <h2>brings <span class="light">mustache</span> into your <span class="light">Titanium</span> application</h2>
         </div>
-        <a href="https://raw.github.com/dawicorti/wyatt/master/dist/wyatt-0.0.7.js"><div class="download">Download latest version (v0.0.7)</div></a>
+        <a href="https://raw.github.com/dawicorti/wyatt/master/dist/wyatt-0.0.8.js"><div class="download">Download latest version (v0.0.8)</div></a>
       </div>
       <div id="doc-wrapper">
 
@@ -55,6 +55,21 @@ var yat = wyatt.render('index.yat', {message: 'Hello World !'})
 yat.first({el: "window"}).open();
           </code></pre>
         </div>
+
+        <h2 id="api">Wyatt API</h2>
+
+        <h3 id="api-render">wyatt.render(path, context)</h3>
+        <p>Returns a YAT Document from a template path and a given context.</p>
+
+        <h3 id="api-yat">wyatt.yat(description)</h3>
+        <p>Returns a YAT Document from a given description (Javascript Object).</p>
+
+        <h3 id="api-el">wyatt.el(name)</h3>
+        <p>Returns an Element constructor from its name (eg: 'view', 'button' ...).</p>
+
+        <h3 id="api-register">wyatt.register(name, constructor)</h3>
+        <p>Registers a constructor with the given name. The new name can be used next in a YAT Document.</p>
+
  
         <h2 id="yat">YAT Document</h2>
         
@@ -243,18 +258,51 @@ yat
 
         <p>A proxy method to <span class="light">ui.removeEventListener</span></p>
 
+        <h3 id="element-custom">Custom Element</h2>
+
+        <p>Any element can be extended and used in the YAT document</p>
+        <p>The process : retrieve the element by its name, extend it, override the create method.</p>
+        <p>Example :</p>
+
+          <pre><code class="javascript">
+var wyatt = require('wyatt');
+
+wyatt.register('redbutton', wyatt.el('button').extend({
+
+  create: function (options) {
+    options.backgroundColor = 'red';
+    wyatt.el('button').prototype.create.apply(this, [options]);
+  }
+
+}));
+
+//  Now 'redbutton' can be used in a YAT Document.
+
+          </code></pre>     
 
       </div>
     </div>
 
       <div id="sidebar">
-         <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.7)</span></a>
+         <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.8)</span></a>
         <ul class="toc_section">
           <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
         </ul>
 
         <a class="toc_title" href="#introduction">Introduction</a>
+
         <a class="toc_title" href="#getting-started">Getting Started</a>
+
+        <a class="toc_title" href="#api">Wyatt API</a>
+        <ul class="toc_section">
+          <li><a href="#api-render">wyatt.render(path, context)</a></li>
+          <li><a href="#api-yat">wyatt.yat(description)</a></li>
+          <li><a href="#api-el">wyatt.el(name)</a></li>
+
+          <li><a href="#api-register">wyatt.register(name, constructor)</a></li>
+
+        </ul>
+
         <a class="toc_title" href="#yat">YAT Document</a>
         <ul class="toc_section">
           <li><a href="#yat-syntax">Syntax</a></li>
@@ -275,7 +323,10 @@ yat
           <li><a href="#element-trigger">  .trigger(event, data)</a></li>
           <li><a href="#element-on">  .on(event, callback)</a></li>
           <li><a href="#element-off">  .off(event, callback)</a></li>
+          <li><a href="#element-custom">Custom Element</a></li>
         </ul>
+
+
       </div>
 
     <script>
