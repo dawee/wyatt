@@ -206,6 +206,44 @@ yat.first({id: "vegetables"}).any({el: "label"}).forEach(function (el) {
 });
           </code></pre>
 
+
+        <h2 id="element">Element</h2>
+        
+        <p>Elements (or view elements) are Titanium UI wrappers. This pattern is inspired by jQuery.</p>
+        <p>You'll get an element instead of the direct UI, but Why ?</p>
+        <p>An element will have a bunch of shorcuts and useful methods to helps you manipulating UI attributes and events.</p>
+        <p>However, elements keep the UI intact and you can still retrieve it with <span class="light">el.ui</span> attribute</p>
+
+        <h3 id="element-ui">.ui</h3>
+        
+        <p>ui attribute is a access to the original Titanium UI object (eg Ti.UI.View)</p>
+
+        <h3 id="element-attr">.attr(key, value)</h3>
+
+        <p>A single way to set parameters. Looks first for a setter (eg: 'color' -> ui.setColor). If the setter doesn't exist, use a simple patch</p>
+        <p>Can be chained. Example :</p>
+
+          <pre><code class="javascript">
+yat
+  .first({id: 'something'})
+    .attr('color', 'white')
+    .attr('width', '50px')
+    .attr('opacity', 0.5)
+          </code></pre>
+
+        <h3 id="element-trigger">.trigger(event, data)</h3>
+
+        <p>A proxy method to <span class="light">ui.fireEvent</span></p>
+
+        <h3 id="element-on">.on(event, callback)</h3>
+
+        <p>A proxy method to <span class="light">ui.addEventListener</span></p>
+
+        <h3 id="element-off">.off(event, callback)</h3>
+
+        <p>A proxy method to <span class="light">ui.removeEventListener</span></p>
+
+
       </div>
     </div>
 
@@ -229,7 +267,15 @@ yat.first({id: "vegetables"}).any({el: "label"}).forEach(function (el) {
           <li><a href="#queries-subqueries">Sub Queries</a></li>
         </ul>
 
+        <a class="toc_title" href="#element">Element</a>
+        <ul class="toc_section">
+          <li><a href="#element-ui">  .ui</a></li>
+          <li><a href="#element-attr">  .attr(key, value)</a></li>
 
+          <li><a href="#element-trigger">  .trigger(event, data)</a></li>
+          <li><a href="#element-on">  .on(event, callback)</a></li>
+          <li><a href="#element-off">  .off(event, callback)</a></li>
+        </ul>
       </div>
 
     <script>
