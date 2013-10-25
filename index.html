@@ -330,7 +330,12 @@ wyatt.register('redbutton', wyatt.el('button').extend({
       </div>
 
     <script>
-       hljs.initHighlightingOnLoad();
+    hljs.initHighlightingOnLoad();
+    </script>
+    <script>
+    if (location.hash.match(/^#.*/)) {
+      document.getElementById(location.hash.replace('#', '')).setAttribute('style', 'background-color: #cdcdcd');
+    }
     </script>
   </body>
 </html>
