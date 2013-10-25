@@ -1,6 +1,6 @@
 {
   "name": "wyatt",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Wyatt brings mustache to your titanium application",
   "main": "index.js",
   "repository": {
@@ -25,6 +25,7 @@
   "devDependencies": {
     "tetanize": "0.0.6",
     "expresso": "~0.9.2",
-    "mockti": "~1.1.1"
+    "mockti": "~1.1.1",
+    "uglify-js": "2.4.1"
   }
 }

@@ -128,6 +128,10 @@ __tetanize_define('index.js', function (require, exports, module) {
     module._types[type] = element;
   };
   
+  wyatt.el = function (type) {
+    return module._types.hasOwnProperty(type) ? module._types[type] : null;
+  };
+  
   wyatt.register('window', require('lib/WindowElement.js'));
   wyatt.register('label', require('lib/LabelElement.js'));
   wyatt.register('view', require('lib/ViewElement.js'));
@@ -591,6 +595,21 @@ __tetanize_define('lib/LabelElement.js', function (require, exports, module) {
   module.exports = LabelElement;
 
 });
+__tetanize_define('lib/ButtonElement.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var ViewElement = require('lib/ViewElement.js');
+  
+  var ButtonElement = ViewElement.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createButton(options);
+    }
+  
+  });
+  
+  module.exports = ButtonElement;
+
+});
 __tetanize_define('lib/ViewElement.js', function (require, exports, module) { 
   var Ti = require('node_modules/titanium-namespace/index.js');
   var extend = require('node_modules/extendable/index.js');
@@ -673,21 +692,6 @@ __tetanize_define('lib/ViewElement.js', function (require, exports, module) {
   ViewElement.extend = extend;
   
   module.exports = ViewElement;
-
-});
-__tetanize_define('lib/ButtonElement.js', function (require, exports, module) { 
-  var Ti = require('node_modules/titanium-namespace/index.js');
-  var ViewElement = require('lib/ViewElement.js');
-  
-  var ButtonElement = ViewElement.extend({
-  
-    create: function (options) {
-      this.ui = Ti.UI.createButton(options);
-    }
-  
-  });
-  
-  module.exports = ButtonElement;
 
 });
 __tetanize_define('lib/ImageElement.js', function (require, exports, module) { 

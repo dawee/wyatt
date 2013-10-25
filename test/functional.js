@@ -38,3 +38,15 @@ exports['is options passed ?'] = function(beforeExit, assert) {
 exports['are subqueries working ?'] = function(beforeExit, assert) {
   assert.equal(1, yat.first({el: 'view'}).any({el: 'view'}).length);
 };
+
+exports['are custom element working ?'] = function(beforeExit, assert) {
+  wyatt.register('multiplier', wyatt.el('view').extend({
+    mul: function (a, b) {
+      return a * b;
+    }
+  }));
+
+  var mulyat = wyatt.yat({"el": "multiplier"});
+
+  assert.equal(42, mulyat.first({el: 'multiplier'}).mul(21, 2));
+};

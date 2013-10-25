@@ -28,6 +28,10 @@ wyatt.register = function (type, element) {
   module._types[type] = element;
 };
 
+wyatt.el = function (type) {
+  return module._types.hasOwnProperty(type) ? module._types[type] : null;
+};
+
 wyatt.register('window', require('./lib/WindowElement'));
 wyatt.register('label', require('./lib/LabelElement'));
 wyatt.register('view', require('./lib/ViewElement'));
