@@ -80,6 +80,8 @@ code {
 #doc-wrapper h3 {
   font-size: 18px;
   margin: 36px 0 36px 0;
+  color: #968879;
+  border-bottom: 1px dotted #968879;
 }
 
 #sidebar {
