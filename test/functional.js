@@ -16,7 +16,7 @@ var yat = wyatt.yat({
 
 
 exports['is generated view type ok ?'] = function(beforeExit, assert) {
-  assert.equal('Titanium.UI.View', yat.first({el: 'view'}).ui._type);
+  assert.equal('Titanium.UI.View', yat.first('view').ui._type);
 };
 
 exports['is generated textfield type ok ?'] = function(beforeExit, assert) {
@@ -24,7 +24,7 @@ exports['is generated textfield type ok ?'] = function(beforeExit, assert) {
 };
 
 exports['is tree length correct ?'] = function(beforeExit, assert) {
-  assert.equal(2, yat.any({el: 'view'}).length);
+  assert.equal(2, yat.where({el: 'view'}).length);
 };
 
 exports['are ti.ui children added ?'] = function(beforeExit, assert) {
@@ -36,7 +36,7 @@ exports['is options passed ?'] = function(beforeExit, assert) {
 };
 
 exports['are subqueries working ?'] = function(beforeExit, assert) {
-  assert.equal(1, yat.first({el: 'view'}).any({el: 'view'}).length);
+  assert.equal(1, yat.first({el: 'view'}).where({el: 'view'}).length);
 };
 
 exports['are custom element working ?'] = function(beforeExit, assert) {
