@@ -1,37 +1,18 @@
-# Wyatt
+<pre>
 
-__Wyatt__ is a template engine for Titanium. It's based on __{JSON}__ and __{{mustache}}__ (Handlebars.js). 
+ .----------------.  .----------------.  .----------------.  .----------------.  .----------------. 
+| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |
+| | _____  _____ | || |  ____  ____  | || |      __      | || |  _________   | || |  _________   | |
+| ||_   _||_   _|| || | |_  _||_  _| | || |     /  \     | || | |  _   _  |  | || | |  _   _  |  | |
+| |  | | /\ | |  | || |   \ \  / /   | || |    / /\ \    | || | |_/ | | \_|  | || | |_/ | | \_|  | |
+| |  | |/  \| |  | || |    \ \/ /    | || |   / ____ \   | || |     | |      | || |     | |      | |
+| |  |   /\   |  | || |    _|  |_    | || | _/ /    \ \_ | || |    _| |_     | || |    _| |_     | |
+| |  |__/  \__|  | || |   |______|   | || ||____|  |____|| || |   |_____|    | || |   |_____|    | |
+| |              | || |              | || |              | || |              | || |              | |
+| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |
+ '----------------'  '----------------'  '----------------'  '----------------'  '----------------' 
 
-Write in __Resources/index.yat__ :
-
-```javascript
-{
-  "el": "window",
-  "options": {
-    "fullscreen": true,
-    "backgroundColor": "white"   
-  },
-  "tree": [
-    {
-      "el": "label",
-      "options": {
-        "text": "{{message}}"  
-      }
-    }
-  ]
-}
-```
-
-Write in __Resources/app.js__ :
-
-```javascript
-var wyatt = require('wyatt');
-
-// Generates the UI
-var yat = wyatt.render('index.yat', {message: 'Hello World !'})
-// Finds and open the window
-yat.first({el: "window"}).open();
-```
+</pre>
 
 Documentation : [dawicorti.github.io/wyatt](http://dawicorti.github.io/wyatt/)
 
