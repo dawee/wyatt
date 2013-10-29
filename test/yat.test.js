@@ -1,25 +1,9 @@
 var Ti = require('titanium-namespace');
-var wyatt = require('../wyatt.mockti');
+var wyatt = require('..');
 var assert = require("assert")
-var content = {
-  "el": 'view',
-  "options": {
-    "backgroundColor": "red",
-    "width": 200
-  },
-  "tree": [
-    {"el": "button"},
-    {"el": "label"},
-    {"el": "textfield"},
-    {
-      "el": "view",
-      "egg": "spam",
-      "eggegg": "spamspam"
-    }
-  ]
-};
+var content = require('./fixtures/eggspam.yat');
 
-describe('YatDocument', function () {
+describe('Yat Document', function () {
   
   it('should find 2 views in tree', function () {
     assert.equal(2, wyatt.yat(content).where({el: 'view'}).length);

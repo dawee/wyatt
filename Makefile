@@ -5,7 +5,6 @@ clean:
 	rm -rf wyatt.mockti.js dist 
 
 tests:
-	@./node_modules/.bin/tetanize --out wyatt.mockti.js
 	@./node_modules/.bin/mocha
 
 hint:
