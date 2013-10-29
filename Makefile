@@ -6,7 +6,7 @@ clean:
 
 tests:
 	@./node_modules/.bin/tetanize --out wyatt.mockti.js
-	@./node_modules/.bin/expresso
+	@./node_modules/.bin/mocha
 
 hint:
 	@jshint ${sources}

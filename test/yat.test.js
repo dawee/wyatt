@@ -1,5 +1,6 @@
 var Ti = require('titanium-namespace');
 var wyatt = require('../wyatt.mockti');
+var assert = require("assert")
 var content = {
   "el": 'view',
   "options": {
@@ -18,27 +19,26 @@ var content = {
   ]
 };
 
+describe('YatDocument', function () {
+  
+  it('should find 2 views in tree', function () {
+    assert.equal(2, wyatt.yat(content).where({el: 'view'}).length);
+  });
 
-exports['test tree length'] = function(beforeExit, assert) {
-  var yat = wyatt.yat(content);
+  it('should get spamspam for eggegg key', function () {
+    assert.equal('spamspam', wyatt.yat(content).first({el: 'view', egg: 'spam'}).eggegg);
+  });
 
-  assert.equal(2, yat.where({el: 'view'}).length);
-};
+  it('should generate a ViewElement instance', function () {
+    assert.equal(true, wyatt.yat(content).first({el: 'view'}) instanceof wyatt.el('view'));
+  });
 
-exports['test queries'] = function(beforeExit, assert) {
-  var yat = wyatt.yat(content);
+  it('test generated element type', function () {
+    assert.equal(true, wyatt.yat(content).first({el: 'view'}) instanceof wyatt.el('view'));
+  });
 
-  assert.equal('spamspam', yat.first({el: 'view', egg: 'spam'}).eggegg);
-};
+  it('test subqueries', function () {
+    assert.equal(1, wyatt.yat(content).first({el: 'view'}).where({el: 'view'}).length);
+  });
 
-exports['test generated element type'] = function(beforeExit, assert) {
-  var yat = wyatt.yat(content);
-
-  assert.equal(true, yat.first({el: 'view'}) instanceof wyatt.el('view'));
-};
-
-exports['test subqueries'] = function(beforeExit, assert) {
-  var yat = wyatt.yat(content);
-
-  assert.equal(1, yat.first({el: 'view'}).where({el: 'view'}).length);
-};
+});

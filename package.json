@@ -24,10 +24,10 @@
   },
   "devDependencies": {
     "tetanize": "0.0.6",
-    "expresso": "~0.9.2",
     "mockti": "~1.1.1",
     "uglify-js": "2.4.1",
     "dewey": "0.0.3",
-    "extend": "~1.2.1"
+    "extend": "~1.2.1",
+    "mocha": "~1.13.0"
   }
 }
