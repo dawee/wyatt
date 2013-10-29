@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var TabElement = require('../lib/el/tab')
 
-describe('view', function () {
+describe('tab', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new TabElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.Tab', el.ui._type);
   });
   
 
@@ -28,6 +28,11 @@ describe('view', function () {
   
 
   it('should give a applyProperties() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a close() proxy', function () {
     throw 'This test is not written.'
   });
   
@@ -52,12 +57,12 @@ describe('view', function () {
   });
   
 
-  it('should give a remove() proxy', function () {
+  it('should give a open() proxy', function () {
     throw 'This test is not written.'
   });
   
 
-  it('should give a removeAllChildren() proxy', function () {
+  it('should give a remove() proxy', function () {
     throw 'This test is not written.'
   });
   

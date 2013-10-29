@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var TextFieldElement = require('../lib/el/textfield')
 
-describe('view', function () {
+describe('textfield', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new TextFieldElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.TextField', el.ui._type);
   });
   
 
@@ -32,6 +32,11 @@ describe('view', function () {
   });
   
 
+  it('should give a blur() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a convertPointToView() proxy', function () {
     throw 'This test is not written.'
   });
@@ -43,6 +48,16 @@ describe('view', function () {
   
 
   it('should give a fireEvent() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a focus() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a hasText() proxy', function () {
     throw 'This test is not written.'
   });
   

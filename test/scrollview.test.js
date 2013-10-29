@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var ScrollViewElement = require('../lib/el/scrollview')
 
-describe('view', function () {
+describe('scrollview', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new ScrollViewElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.ScrollView', el.ui._type);
   });
   
 
@@ -63,6 +63,16 @@ describe('view', function () {
   
 
   it('should give a removeEventListener() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a scrollTo() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a scrollToBottom() proxy', function () {
     throw 'This test is not written.'
   });
   

@@ -2,7 +2,7 @@ version := `cat package.json | grep version |  sed -e 's/.*: "//' | sed -e 's/",
 sources := $$(find index.js lib -name "*.js")
 
 clean:
-	rm -rf wyatt.mockti.js dist 
+	rm -rf dist 
 
 tests:
 	@./node_modules/.bin/mocha

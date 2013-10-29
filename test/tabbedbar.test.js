@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var TabbedBarElement = require('../lib/el/tabbedbar')
 
-describe('view', function () {
+describe('tabbedbar', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new TabbedBarElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.TabbedBar', el.ui._type);
   });
   
 

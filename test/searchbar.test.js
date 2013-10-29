@@ -1,19 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var SearchBarElement = require('../lib/el/searchbar')
 
-describe('view', function () {
+describe('searchbar', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new SearchBarElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
-  });
-  
-
-  it('should give a add() proxy', function () {
-    throw 'This test is not written.'
+    assert.equal('Titanium.UI.SearchBar', el.ui._type);
   });
   
 
@@ -28,6 +23,11 @@ describe('view', function () {
   
 
   it('should give a applyProperties() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a blur() proxy', function () {
     throw 'This test is not written.'
   });
   
@@ -47,17 +47,17 @@ describe('view', function () {
   });
   
 
+  it('should give a focus() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a hide() proxy', function () {
     throw 'This test is not written.'
   });
   
 
   it('should give a remove() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a removeAllChildren() proxy', function () {
     throw 'This test is not written.'
   });
   

@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var TabGroupElement = require('../lib/el/tabgroup')
 
-describe('view', function () {
+describe('tabgroup', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new TabGroupElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.TabGroup', el.ui._type);
   });
   
 
@@ -22,12 +22,22 @@ describe('view', function () {
   });
   
 
+  it('should give a addTab() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a animate() proxy', function () {
     throw 'This test is not written.'
   });
   
 
   it('should give a applyProperties() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a close() proxy', function () {
     throw 'This test is not written.'
   });
   
@@ -52,17 +62,22 @@ describe('view', function () {
   });
   
 
+  it('should give a open() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a remove() proxy', function () {
     throw 'This test is not written.'
   });
   
 
-  it('should give a removeAllChildren() proxy', function () {
+  it('should give a removeEventListener() proxy', function () {
     throw 'This test is not written.'
   });
   
 
-  it('should give a removeEventListener() proxy', function () {
+  it('should give a removeTab() proxy', function () {
     throw 'This test is not written.'
   });
   

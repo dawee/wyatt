@@ -1,14 +1,14 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var ViewElement = require('../lib/el/view')
+var ImageViewElement = require('../lib/el/imageview')
 
-describe('view', function () {
+describe('imageview', function () {
   
   it('should create correct UI type', function () {
-    var el = new ViewElement;
+    var el = new ImageViewElement;
     el.create({});
 
-    assert.equal('Titanium.UI.View', el.ui._type);
+    assert.equal('Titanium.UI.ImageView', el.ui._type);
   });
   
 
@@ -52,6 +52,11 @@ describe('view', function () {
   });
   
 
+  it('should give a pause() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a remove() proxy', function () {
     throw 'This test is not written.'
   });
@@ -67,12 +72,32 @@ describe('view', function () {
   });
   
 
+  it('should give a resume() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a show() proxy', function () {
     throw 'This test is not written.'
   });
   
 
+  it('should give a start() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
   it('should give a startLayout() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a stop() proxy', function () {
+    throw 'This test is not written.'
+  });
+  
+
+  it('should give a toBlob() proxy', function () {
     throw 'This test is not written.'
   });
   
