@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>Wyatt</title>
+    <link rel="stylesheet" type="text/css" href="./wyatt.css" />
+    <link rel="stylesheet" type="text/css" href="./github.css" />
+    <script type="text/javascript" src="./highlight.pack.js"></script>
+  </head>
+  <body>
+    <div id="content">
+      <div id="ban-wrapper">
+        <div id="ban">
+            <h1 id="wyatt">Wyatt</h1>
+            <h2>brings <span class="light">mustache</span> into your <span class="light">Titanium</span> application</h2>
+        </div>
+        <a href="https://raw.github.com/dawicorti/wyatt/master/dist/wyatt-0.0.8.js"><div class="download">Download latest version (v0.0.8)</div></a>
+      </div>
+      <div id="doc-wrapper">
+      </div>
+
+    </div>
+
+    <div id="sidebar">
+      <a class="toc_title" href="#wyatt">Wyatt <span class="version">(0.0.8)</span></a>
+      <ul class="toc_section">
+        <li>&raquo; <a href="http://github.com/dawicorti/wyatt">GitHub Repository</a></li>
+      </ul>
+
+    </div>
+
+    <script>
+    hljs.initHighlightingOnLoad();
+    </script>
+    <script>
+    if (location.hash.match(/^#.*/)) {
+      document.getElementById(location.hash.replace('#', '')).setAttribute('style', 'background-color: #cdcdcd');
+    }
+    </script>
+  </body>
+</html>
