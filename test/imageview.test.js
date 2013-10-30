@@ -1,5 +1,5 @@
 var Ti = require('titanium-namespace');
-var assert = require("assert")
+var assert = require("assert");
 var eltool = require('./lib/el');
 
 describe('imageview', function () {

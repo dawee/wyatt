@@ -1,6 +1,6 @@
 {
   "name": "wyatt",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Wyatt brings mustache to your titanium application",
   "main": "index.js",
   "repository": {

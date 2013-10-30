@@ -1,29 +1,27 @@
 var Ti = require('titanium-namespace');
-var assert = require("assert")
-var TextFieldElement = require('../lib/el/textfield')
+var assert = require("assert");
+var eltool = require('./lib/el');
 
 describe('textfield', function () {
   
   it('should create correct UI type', function () {
-    var el = new TextFieldElement;
-    el.create({});
-
-    assert.equal('Titanium.UI.TextField', el.ui._type);
+    assert.equal('Titanium.UI.TextField', eltool.create('textfield').ui._type);
   });
   
 
   it('should give a blur() proxy', function () {
-    throw 'This test is not written.'
+    var data = eltool.fakeProxy(eltool.create('textfield'), 'blur');
+
+    assert.equal(true, data['blur:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 
   it('should give a focus() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    var data = eltool.fakeProxy(eltool.create('textfield'), 'focus');
 
-  it('should give a hasText() proxy', function () {
-    throw 'This test is not written.'
+    assert.equal(true, data['focus:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 

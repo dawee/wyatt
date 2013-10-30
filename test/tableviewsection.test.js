@@ -10,11 +10,5 @@ describe('tableviewsection', function () {
 
     assert.equal('Titanium.UI.TableViewSection', el.ui._type);
   });
-  
-
-  it('should give a rowAtIndex() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
 
 });

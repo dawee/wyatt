@@ -10,16 +10,5 @@ describe('scrollview', function () {
 
     assert.equal('Titanium.UI.ScrollView', el.ui._type);
   });
-  
-
-  it('should give a scrollTo() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a scrollToBottom() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
 
 });

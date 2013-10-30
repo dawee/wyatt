@@ -1,24 +1,27 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var SearchBarElement = require('../lib/el/searchbar')
+var eltool = require('./lib/el');
 
 describe('searchbar', function () {
   
   it('should create correct UI type', function () {
-    var el = new SearchBarElement;
-    el.create({});
-
-    assert.equal('Titanium.UI.SearchBar', el.ui._type);
+    assert.equal('Titanium.UI.SearchBar', eltool.create('searchbar').ui._type);
   });
   
 
   it('should give a blur() proxy', function () {
-    throw 'This test is not written.'
+    var data = eltool.fakeProxy(eltool.create('searchbar'), 'blur');
+
+    assert.equal(true, data['blur:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 
   it('should give a focus() proxy', function () {
-    throw 'This test is not written.'
+    var data = eltool.fakeProxy(eltool.create('searchbar'), 'focus');
+
+    assert.equal(true, data['focus:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 
