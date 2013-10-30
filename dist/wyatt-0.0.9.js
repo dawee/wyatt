@@ -24,33 +24,33 @@ var __tetanize_define = function (id, constructor) {
 
 __tetanize_define('index.js', function (require, exports, module) { 
   var wyatt = module.exports = require('lib/wyatt.js');
-  var natives = [
-    'window',
-    'label',
-    'view',
-    'button',
-    'imageview',
-    'textfield',
-    'activityindicator',
-    'buttonbar',
-    'progressbar',
-    'scrollview',
-    'searchbar',
-    'slider',
-    'switch',
-    'tab',
-    'tabgroup',
-    'tabbedbar',
-    'tableview',
-    'tableviewrow',
-    'tableviewsection',
-    'textarea',
-    'toolbar',
-    'webview'
-  ];
+  var natives = {
+    'window': require('lib/el/window.js'),
+    'label': require('lib/el/label.js'),
+    'view': require('lib/el/view.js'),
+    'button': require('lib/el/button.js'),
+    'imageview': require('lib/el/imageview.js'),
+    'textfield': require('lib/el/textfield.js'),
+    'activityindicator': require('lib/el/activityindicator.js'),
+    'buttonbar': require('lib/el/buttonbar.js'),
+    'progressbar': require('lib/el/progressbar.js'),
+    'scrollview': require('lib/el/scrollview.js'),
+    'searchbar': require('lib/el/searchbar.js'),
+    'slider': require('lib/el/slider.js'),
+    'switch': require('lib/el/switch.js'),
+    'tab': require('lib/el/tab.js'),
+    'tabgroup': require('lib/el/tabgroup.js'),
+    'tabbedbar': require('lib/el/tabbedbar.js'),
+    'tableview': require('lib/el/tableview.js'),
+    'tableviewrow': require('lib/el/tableviewrow.js'),
+    'tableviewsection': require('lib/el/tableviewsection.js'),
+    'textarea': require('lib/el/textarea.js'),
+    'toolbar': require('lib/el/toolbar.js'),
+    'webview': require('lib/el/webview.js')
+  };
   
-  natives.forEach(function (el) {
-    wyatt.register(el, require('./lib/el/' + el));
+  Object.keys(natives).forEach(function (el) {
+    wyatt.register(el, natives[el]);
   });
 
 });
@@ -190,6 +190,537 @@ __tetanize_define('lib/yat/query.js', function (require, exports, module) {
   };
   
   module.exports = YatQuery;
+
+});
+__tetanize_define('lib/el/window.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var WindowElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createWindow(options);
+    },
+  
+    open: function (cb) {
+      if (cb) this.on('open', cb);
+      this.ui.open();
+    },
+  
+    close: function (cb) {
+      if (cb) this.on('close', cb);
+      this.ui.close();
+    }
+  
+  });
+  
+  module.exports = WindowElement;
+
+});
+__tetanize_define('lib/el/label.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var LabelElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createLabel(options);
+    }
+  
+  });
+  
+  module.exports = LabelElement;
+
+});
+__tetanize_define('lib/el/view.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ViewElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createView(options);
+    }
+  
+  });
+  
+  module.exports = ViewElement;
+
+});
+__tetanize_define('lib/el/button.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ButtonElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createButton(options);
+    }
+  
+  });
+  
+  module.exports = ButtonElement;
+
+});
+__tetanize_define('lib/el/imageview.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ImageElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createImageView(options);
+    },
+  
+    start: function (cb) {
+      if (cb) this.on('start', cb);
+      this.ui.start();
+    },
+  
+    pause: function (cb) {
+      if (cb) this.on('pause', cb);
+      this.ui.pause();
+    },
+  
+    resume: function (cb) {
+      if (cb) this.on('start', cb);
+      this.ui.resume();
+    },
+  
+    stop: function (cb) {
+      if (cb) this.on('stop', cb);
+      this.ui.stop();
+    }
+  
+  });
+  
+  module.exports = ImageElement;
+
+});
+__tetanize_define('lib/el/textfield.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TextFieldElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTextField(options);
+    },
+  
+    blur: function (cb) {
+      if (cb) this.on('blur', cb);
+      this.ui.blur();
+    },
+  
+    focus: function (cb) {
+      if (cb) this.on('focus', cb);
+      this.ui.focus();
+    }
+  
+  });
+  
+  module.exports = TextFieldElement;
+
+});
+__tetanize_define('lib/el/activityindicator.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ActivityindicatorElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createActivityIndicator(options);
+    },
+  
+  });
+  
+  module.exports = ActivityindicatorElement;
+  
+
+});
+__tetanize_define('lib/el/buttonbar.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ButtonbarElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createButtonBar(options);
+    },
+  
+  });
+  
+  module.exports = ButtonbarElement;
+  
+
+});
+__tetanize_define('lib/el/progressbar.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ProgressbarElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createProgressBar(options);
+    },
+  
+  });
+  
+  module.exports = ProgressbarElement;
+  
+
+});
+__tetanize_define('lib/el/scrollview.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ScrollviewElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createScrollView(options);
+    },
+  
+  });
+  
+  module.exports = ScrollviewElement;
+  
+
+});
+__tetanize_define('lib/el/searchbar.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var SearchbarElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createSearchBar(options);
+    },
+  
+    blur: function (cb) {
+      if (cb) this.on('blur', cb);
+      this.ui.blur();
+    },
+  
+    focus: function (cb) {
+      if (cb) this.on('focus', cb);
+      this.ui.focus();
+    }
+  
+  });
+  
+  module.exports = SearchbarElement;
+  
+
+});
+__tetanize_define('lib/el/slider.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var SliderElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createSlider(options);
+    },
+  
+  });
+  
+  module.exports = SliderElement;
+  
+
+});
+__tetanize_define('lib/el/switch.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var SwitchElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createSwitch(options);
+    },
+  
+  });
+  
+  module.exports = SwitchElement;
+  
+
+});
+__tetanize_define('lib/el/tab.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TabElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTab(options);
+    },
+  
+    open: function (cb) {
+      if (cb) this.on('open', cb);
+      this.ui.open();
+    },
+  
+    close: function (cb) {
+      if (cb) this.on('close', cb);
+      this.ui.close();
+    }
+  
+  });
+  
+  module.exports = TabElement;
+  
+
+});
+__tetanize_define('lib/el/tabgroup.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TabGroupElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTabGroup(options);
+    },
+  
+    open: function (cb) {
+      if (cb) this.on('open', cb);
+      this.ui.open();
+    },
+  
+    close: function (cb) {
+      if (cb) this.on('close', cb);
+      this.ui.close();
+    }
+  
+  });
+  
+  module.exports = TabGroupElement;
+  
+
+});
+__tetanize_define('lib/el/tabbedbar.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TabbedbarElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTabbedBar(options);
+    },
+  
+  });
+  
+  module.exports = TabbedbarElement;
+  
+
+});
+__tetanize_define('lib/el/tableview.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TableViewElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTableView(options);
+    },
+  
+    sync: function () {
+      this.attr('data', this.data);
+      this.data = [];
+    }
+  
+  });
+  
+  module.exports = TableViewElement;
+  
+
+});
+__tetanize_define('lib/el/tableviewrow.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TableViewRowElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTableViewRow(options);
+    },
+  
+  });
+  
+  module.exports = TableViewRowElement;
+  
+
+});
+__tetanize_define('lib/el/tableviewsection.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TableViewSectionElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTableViewSection(options);
+    },
+  
+  });
+  
+  module.exports = TableViewSectionElement;
+  
+
+});
+__tetanize_define('lib/el/textarea.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var TextAreaElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createTextArea(options);
+    },
+  
+    blur: function (cb) {
+      if (cb) this.on('blur', cb);
+      this.ui.blur();
+    },
+  
+    focus: function (cb) {
+      if (cb) this.on('focus', cb);
+      this.ui.focus();
+    }
+  
+  });
+  
+  module.exports = TextAreaElement;
+  
+
+});
+__tetanize_define('lib/el/toolbar.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var ToolbarElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createToolbar(options);
+    },
+  
+  });
+  
+  module.exports = ToolbarElement;
+  
+
+});
+__tetanize_define('lib/el/webview.js', function (require, exports, module) { 
+  
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var WebViewElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createWebView(options);
+    },
+  
+  });
+  
+  module.exports = WebViewElement;
+  
+
+});
+__tetanize_define('lib/proxy.js', function (require, exports, module) { 
+  var extend = require('node_modules/extendable/index.js');
+  
+  function Proxy(template, yat) {
+    template = template || {};
+  
+    if (typeof this.initialize === 'function') this.initialize(template);
+    this.data = [];
+    this._patch(template);
+    this.yat = yat;
+  }
+  
+  Proxy.prototype._patch = function (keys) {
+    var el = this;
+  
+    Object.keys(keys).forEach(function(key) {
+      if (key !== 'tree') el[key] = keys[key];
+    });
+  };
+  
+  Proxy.prototype.first = function (query) {
+    return this.yat.first(query);
+  };
+  
+  Proxy.prototype.where = function (query) {
+    return this.yat.where(query);
+  };
+  
+  Proxy.prototype.append = function (child, sync) {
+    var el = this;
+    sync = typeof sync === 'undefined' ? true : sync;
+  
+    if (Array.isArray(child)) {
+      child.forEach(function (c) { el.append(c, false); });
+    } else {
+      this.data.push(child instanceof Proxy ? child.ui : child);
+    }
+  
+    if (sync && typeof this.sync === 'function') this.sync();
+    return this;
+  };
+  
+  Proxy.prototype.sync = function () {
+    var el = this;
+  
+    this.data.forEach(function (ui) {
+      el.ui.add(ui);
+    });
+  
+    this.data = [];
+  };
+  
+  Proxy.prototype.attr = function (key, value) {
+    var setter = 'set' + key.replace(/^[a-z]/, function(m){ return m.toUpperCase(); });
+  
+    if (Proxy._setter === 'setter' && typeof this.ui[setter] === 'function') {
+      this.ui[setter](value);
+    } else {
+      this.ui[key] = value;
+    }
+  
+    return this;
+  };
+  
+  Proxy.prototype.on = function (evt, cb) {
+    this.ui.addEventListener(evt, cb);
+    return this;
+  };
+  
+  Proxy.prototype.trigger = function (evt, args) {
+    this.ui.fireEvent(evt, args);
+    return this;
+  };
+  
+  Proxy.prototype.off = function (evt, cb) {
+    this.ui.removeEventListener(evt, cb);
+    return this;
+  };
+  
+  Proxy._setter = 'setter';
+  
+  Proxy.extend = extend;
+  module.exports = Proxy;
 
 });
 __tetanize_define('node_modules/handlebars/lib/handlebars.js', function (require, exports, module) { 
@@ -602,6 +1133,93 @@ __tetanize_define('node_modules/handlebars/lib/handlebars/runtime.js', function 
   
   return Handlebars;
   
+  };
+  
+
+});
+__tetanize_define('node_modules/extendable/index.js', function (require, exports, module) { 
+  // 'use strict'; <-- Root of all evil, causes thrown errors on readyOnly props.
+  
+  /**
+   * Copy all readable properties from an Object or function and past them on the
+   * object.
+   *
+   * @param {Object} obj The object we should paste everything on.
+   * @returns {Object} obj
+   * @api private
+   */
+  function copypaste(obj) {
+    Array.prototype.slice.call(arguments, 1).forEach(function each(source) {
+      if (source) {
+        for (var prop in source) {
+          obj[prop] = source[prop];
+        }
+      }
+    });
+  
+    return obj;
+  }
+  
+  /**
+   * A proper mixin function that respects getters and setters.
+   *
+   * @param {Object} obj The object that should receive all properties
+   * @returns {Object} obj
+   * @api private
+   */
+  function mixin(obj) {
+    Array.prototype.slice.call(arguments, 1).forEach(function forEach(o) {
+      Object.getOwnPropertyNames(o).forEach(function eachAttr(attr) {
+        Object.defineProperty(obj, attr, Object.getOwnPropertyDescriptor(o, attr));
+      });
+    });
+  
+    return obj;
+  }
+  
+  /**
+   * Backbone.js helper functions, these have been copy-pasted from the backbone.js
+   * source code so they can re-used in our application interface.
+   *
+   * @license MIT, http://backbonejs.org
+   */
+  
+  //
+  // Helper function to correctly set up the prototype chain, for subclasses.
+  // Similar to `goog.inherits`, but uses a hash of prototype properties and
+  // class properties to be extended.
+  //
+  module.exports = function extend(protoProps, staticProps) {
+    var parent = this;
+    var child;
+  
+    // The constructor function for the new subclass is either defined by you
+    // (the "constructor" property in your `extend` definition), or defaulted
+    // by us to simply call the parent's constructor.
+    if (protoProps && Object.prototype.hasOwnProperty.call(protoProps, 'constructor')) {
+      child = protoProps.constructor;
+    } else {
+      child = function(){ parent.apply(this, arguments); };
+    }
+  
+    // Set the prototype chain to inherit from `parent`, without calling
+    // `parent`'s constructor function.
+    function Surrogate(){ this.constructor = child; }
+    Surrogate.prototype = parent.prototype;
+    child.prototype = new Surrogate;
+  
+    // Add prototype properties (instance properties) to the subclass,
+    // if supplied.
+    if (protoProps) mixin(child.prototype, protoProps);
+  
+    // Add static properties to the constructor function, if supplied.
+    copypaste(child, parent, staticProps);
+  
+    // Set a convenience property in case the parent's prototype is needed
+    // later.
+    child.__super__ = parent.prototype;
+  
+    return child;
   };
   
 
