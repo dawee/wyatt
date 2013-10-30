@@ -12,36 +12,6 @@ describe('tableviewsection', function () {
   });
   
 
-  it('should give a add() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a addEventListener() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a applyProperties() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a fireEvent() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a remove() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a removeEventListener() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
   it('should give a rowAtIndex() proxy', function () {
     throw 'This test is not written.'
   });

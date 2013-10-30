@@ -12,88 +12,41 @@ describe('window', function () {
   });
   
 
-  it('should give a add() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a addEventListener() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a animate() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a applyProperties() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
   it('should give a close() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    var el = new WindowElement;
+    var data = {};
+    el.create({});
 
-  it('should give a convertPointToView() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    el.ui.close = function () {
+      data['close:called'] = true;
+      el.ui.fireEvent('close');
+    };
 
-  it('should give a finishLayout() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    el.close(function () {
+      data['callback:called'] = true;
+    });
 
-  it('should give a fireEvent() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a hide() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a hideTabBar() proxy', function () {
-    throw 'This test is not written.'
+    assert.equal(true, data['close:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 
   it('should give a open() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    var el = new WindowElement;
+    var data = {};
+    el.create({});
 
-  it('should give a remove() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    el.ui.open = function () {
+      data['open:called'] = true;
+      el.ui.fireEvent('open');
+    };
 
-  it('should give a removeEventListener() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
+    el.open(function () {
+      data['callback:called'] = true;
+    });
 
-  it('should give a show() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a startLayout() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a toImage() proxy', function () {
-    throw 'This test is not written.'
-  });
-  
-
-  it('should give a updateLayout() proxy', function () {
-    throw 'This test is not written.'
+    assert.equal(true, data['open:called']);
+    assert.equal(true, data['callback:called']);
   });
   
 
