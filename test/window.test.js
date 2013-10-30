@@ -1,30 +1,16 @@
 var Ti = require('titanium-namespace');
 var assert = require("assert")
-var WindowElement = require('../lib/el/window')
+var eltool = require('./lib/el');
 
 describe('window', function () {
   
   it('should create correct UI type', function () {
-    var el = new WindowElement;
-    el.create({});
-
-    assert.equal('Titanium.UI.Window', el.ui._type);
+    assert.equal('Titanium.UI.Window', eltool.create('window').ui._type);
   });
   
 
   it('should give a close() proxy', function () {
-    var el = new WindowElement;
-    var data = {};
-    el.create({});
-
-    el.ui.close = function () {
-      data['close:called'] = true;
-      el.ui.fireEvent('close');
-    };
-
-    el.close(function () {
-      data['callback:called'] = true;
-    });
+    var data = eltool.fakeProxy(eltool.create('window'), 'close');
 
     assert.equal(true, data['close:called']);
     assert.equal(true, data['callback:called']);
@@ -32,18 +18,7 @@ describe('window', function () {
   
 
   it('should give a open() proxy', function () {
-    var el = new WindowElement;
-    var data = {};
-    el.create({});
-
-    el.ui.open = function () {
-      data['open:called'] = true;
-      el.ui.fireEvent('open');
-    };
-
-    el.open(function () {
-      data['callback:called'] = true;
-    });
+    var data = eltool.fakeProxy(eltool.create('window'), 'open');
 
     assert.equal(true, data['open:called']);
     assert.equal(true, data['callback:called']);
