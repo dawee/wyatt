@@ -14,4 +14,13 @@ describe('Proxy', function () {
     assert.equal('green', proxy.attr('backgroundColor', 'green').ui.backgroundColor);
   });
 
+
+  it('should manages dynamics append', function () {
+    var proxy = new Proxy();
+
+    proxy.ui = Ti.UI.createView();
+    proxy.append({el: 'view'})
+    assert.equal(1, proxy.where().length);
+  });
+
 });

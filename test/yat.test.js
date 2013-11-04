@@ -17,6 +17,10 @@ describe('Yat Document', function () {
     assert.equal(true, wyatt.yat(content).first({el: 'view'}) instanceof wyatt.el('view'));
   });
 
+  it('should get the first view without any rule', function () {
+    assert.equal(true, wyatt.yat(content).first() instanceof wyatt.el('view'));
+  });
+
   it('test generated element type', function () {
     assert.equal(true, wyatt.yat(content).first({el: 'view'}) instanceof wyatt.el('view'));
   });

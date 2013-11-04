@@ -72,7 +72,7 @@ __tetanize_define('lib/wyatt.js', function (require, exports, module) {
   };
   
   wyatt.yat = function (template) {
-    return new YatDocument(module._types).parse(template);
+    return new YatDocument().parse(template);
   };
   
   wyatt.render = function (path, ctx) {
@@ -81,12 +81,11 @@ __tetanize_define('lib/wyatt.js', function (require, exports, module) {
   };
   
   wyatt.register = function (type, element) {
-    module._types = typeof module._types === 'undefined' ? {} : module._types;
-    module._types[type] = element;
+    return YatDocument.register(type, element);
   };
   
   wyatt.el = function (type) {
-    return module._types.hasOwnProperty(type) ? module._types[type] : null;
+    return YatDocument.el(type);
   };
   
 
@@ -94,9 +93,9 @@ __tetanize_define('lib/wyatt.js', function (require, exports, module) {
 __tetanize_define('lib/yat/document.js', function (require, exports, module) { 
   var YatQuery = require('lib/yat/query.js');
   
-  function YatDocument(types, stack) {
-    this.stack = stack || [];
-    this.types = types;
+  function YatDocument() {
+    this.stack = [];
+    this.types = module._types;
     this.registry = [];
   }
   
@@ -117,27 +116,36 @@ __tetanize_define('lib/yat/document.js', function (require, exports, module) {
     var el = new ElementType(template, yat);
   
     el.create(template.options || {});
-    this.stack.forEach(function (registry) {
-      registry.push(el);
-    });
-  
+    this.index(el);
     return el;
+  };
+  
+  YatDocument.prototype.index = function (el) {
+    // add to current registry
+    this.registry.push(el);
+  
+    // add to parent registries
+    this.stack.forEach(function (yat) {
+      yat.registry.push(el);
+    });
+  };
+  
+  YatDocument.prototype.push = function () {
+    this.stack = this.stack.concat.apply(this.stack, Array.prototype.slice.call(arguments));
   };
   
   YatDocument.prototype.scan = function (parent, tree) {
     var yat = this;
   
-    this.stack.push(this.registry);
-  
     tree.forEach(function (template, index) {
-      var subyat = new YatDocument(yat.types, yat.stack);
-      var el = yat.el(template, subyat);
+      var el = yat.el(template);
+      var subyat = el.yat;
   
-      if (parent) parent.append(el, index === tree.length - 1);
+      if (parent) parent.append(el, index === tree.length - 1, false);
+      if (!parent) subyat.push([].concat(yat.stack, [yat]));
       if (typeof template.tree !== 'undefined') subyat.scan(el, template.tree);
     });
   
-    if (parent && typeof parent.sync === 'function') parent.sync();
     return this;
   };
   
@@ -146,6 +154,15 @@ __tetanize_define('lib/yat/document.js', function (require, exports, module) {
   
     this.scan(parent || null, tree);
     return this;
+  };
+  
+  YatDocument.register = function (type, element) {
+    module._types = typeof module._types === 'undefined' ? {} : module._types;
+    module._types[type] = element;
+  };
+  
+  YatDocument.el = function (type) {
+    return module._types.hasOwnProperty(type) ? module._types[type] : null;
   };
   
   module.exports = YatDocument;
@@ -181,7 +198,7 @@ __tetanize_define('lib/yat/query.js', function (require, exports, module) {
     this.registry.every(function (el) {
       var more = true;
   
-      if (query.match(el, rules)) elements.push(el);
+      if (!rules || query.match(el, rules)) elements.push(el);
       if (query.limit && elements.length === query.limit) more = false;
       return more;
     });
@@ -190,6 +207,21 @@ __tetanize_define('lib/yat/query.js', function (require, exports, module) {
   };
   
   module.exports = YatQuery;
+
+});
+__tetanize_define('lib/el/label.js', function (require, exports, module) { 
+  var Ti = require('node_modules/titanium-namespace/index.js');
+  var Proxy = require('lib/proxy.js');
+  
+  var LabelElement = Proxy.extend({
+  
+    create: function (options) {
+      this.ui = Ti.UI.createLabel(options);
+    }
+  
+  });
+  
+  module.exports = LabelElement;
 
 });
 __tetanize_define('lib/el/window.js', function (require, exports, module) { 
@@ -215,21 +247,6 @@ __tetanize_define('lib/el/window.js', function (require, exports, module) {
   });
   
   module.exports = WindowElement;
-
-});
-__tetanize_define('lib/el/label.js', function (require, exports, module) { 
-  var Ti = require('node_modules/titanium-namespace/index.js');
-  var Proxy = require('lib/proxy.js');
-  
-  var LabelElement = Proxy.extend({
-  
-    create: function (options) {
-      this.ui = Ti.UI.createLabel(options);
-    }
-  
-  });
-  
-  module.exports = LabelElement;
 
 });
 __tetanize_define('lib/el/view.js', function (require, exports, module) { 
@@ -640,14 +657,15 @@ __tetanize_define('lib/el/webview.js', function (require, exports, module) {
 });
 __tetanize_define('lib/proxy.js', function (require, exports, module) { 
   var extend = require('node_modules/extendable/index.js');
+  var YatDocument = require('lib/yat/document.js');
   
-  function Proxy(template, yat) {
+  function Proxy(template) {
     template = template || {};
   
     if (typeof this.initialize === 'function') this.initialize(template);
     this.data = [];
     this._patch(template);
-    this.yat = yat;
+    this.yat = new YatDocument();
   }
   
   Proxy.prototype._patch = function (keys) {
@@ -667,13 +685,23 @@ __tetanize_define('lib/proxy.js', function (require, exports, module) {
   };
   
   Proxy.prototype.append = function (child, sync) {
-    var el = this;
+    var proxy = this;
     sync = typeof sync === 'undefined' ? true : sync;
   
     if (Array.isArray(child)) {
-      child.forEach(function (c) { el.append(c, false); });
+      child.forEach(function (c) { proxy.append(c, false); });
+    } else if (child instanceof Proxy) {
+      this.data.push(child.ui);
+      child.yat.push([].concat(this.yat.stack, [this.yat]));
+    } else if (typeof child === 'object' && child.hasOwnProperty('el')) {
+      var subyat = new YatDocument();
+      subyat.push([].concat(this.yat.stack, [this.yat]));
+      subyat.parse(child);
+      this.append(subyat.first());
     } else {
-      this.data.push(child instanceof Proxy ? child.ui : child);
+      var cproxy = new Proxy();
+      cproxy.ui = child;
+      this.append(cproxy);
     }
   
     if (sync && typeof this.sync === 'function') this.sync();
