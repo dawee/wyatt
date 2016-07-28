@@ -12,7 +12,7 @@
 
 </pre>
 
-Documentation : [dawicorti.github.io/wyatt](http://dawicorti.github.io/wyatt/)
+Documentation : [dawee.github.io/wyatt](http://dawicorti.github.io/wyatt/)
 
 ## License 
 
